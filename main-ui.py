@@ -3,6 +3,7 @@
 import tkinter as tk
 from tkinter import filedialog
 
+from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import HorizontalGroup, Horizontal, VerticalScroll
 from textual.widgets import Button, Footer, Header, Label, TextArea
@@ -31,7 +32,6 @@ class JpegInspector(App):
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
-        print("Button pressed")
         if event.button.id == "browse":
             # root = tk.Tk()
             # filename = filedialog.askopenfilename()
@@ -48,15 +48,16 @@ class JpegInspector(App):
                     button.remove_class("selected")
                 event.button.add_class("selected")
 
+    @work(thread=True)
     def load_jpeg(self) -> None:
+        notebook: Notebook = self.query_one("#notebook")
+
         self.image = Jpeg(self.filename)
         self.image.parse()
-
         # Populate the notebook with a tab for each segment
-        notebook: Notebook = self.query_one("#notebook")
-        notebook.clear()
+        self.call_from_thread(notebook.clear)
         for segment in self.image.segments:
-            notebook.add_tab(segment.name, repr(segment.data))
+            self.call_from_thread(notebook.add_tab, segment.name, str(segment.data))
 
 
 if __name__ == "__main__":

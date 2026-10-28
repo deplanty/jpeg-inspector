@@ -12,14 +12,15 @@ class Notebook(HorizontalGroup):
         yield self.__text_area
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
+        # if event.button.has_class("notebook-tab"):
         # Manage tabs style
         for button in self.query("Button.notebook-tab"):
             if button.has_class("selected"):
                 button.remove_class("selected")
-            event.button.add_class("selected")
+        event.button.add_class("selected")
 
         # Show tab data
-        self.__text_area.load_text(self.__tab_data[event.button])
+        self.__show_data(event.button)
 
     def add_tab(self, name: str, data: str) -> None:
         button = Button(name, classes="notebook-tab", compact=True)
@@ -27,9 +28,15 @@ class Notebook(HorizontalGroup):
         self.__tab_data[button] = data
 
         if len(self.query("Button.notebook-tab")) == 1:
-            button.press()
+            # Show tab data
+            button.add_class("selected")
+            self.__show_data(button)
 
     def clear(self) -> None:
         for button in self.query("Button.notebook-tab"):
             button.remove()
         self.__tab_data.clear()
+
+    def __show_data(self, button: Button) -> None:
+        data = self.__tab_data[button]
+        self.__text_area.load_text(data)

@@ -11,7 +11,7 @@ Button.notebook-tab {
 }
 
 Button.notebook-tab.selected {
-    background: #eeeeee;
+    background: $primary;
 }
 
 TextArea#text-data {
