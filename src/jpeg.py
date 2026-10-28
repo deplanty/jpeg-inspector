@@ -117,7 +117,7 @@ class Jpeg:
         with output.open("wb") as fid:
             for segment in self.segments:
                 if segment.name.startswith("APP"):
-                    if segment.data[2:].startswith(b"http://"):
+                    if segment.data.startswith(b"http://"):
                         continue
 
                 fid.write(segment.get_full_segment())

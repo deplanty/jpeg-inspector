@@ -4,9 +4,15 @@ import struct
 
 @dataclass
 class Segment:
+    #: The name of the marker (e.g. SOI)
     name: str
+    #: The marker's bytes (e.g. 0xFFD8)
     marker: bytes
+    #: The length of the marker's data (without the 2 bytes of the marker)
     length: int
+    #: The size of the data (without the 2 bytes for the length when present)
+    data_size: int
+    #: The data contained in the marker (without the 2 bytes for the length when present)
     data: bytes = b""
 
     @classmethod
@@ -18,12 +24,14 @@ class Segment:
         # Info about reading the markers: https://www.media.mit.edu/pia/Research/deepview/exif.html
         # The marker has no size (e.g. SOI and EOI) or a given size (e.g. DRI)
         if length >= 0:
-            pass
+            data_size = length
         # The marker has a variable size given by the next 2 bytes
         elif length == -1:
             # Read 2 bytes of data: >H (big endian unsigned short)
             # The length contains the 2 bytes indicating the size of the data
             length, *_ = struct.unpack(">H", data[index : index + 2])
+            data_size = length - 2
+            index += 2
         # The marker has a variable size: from this marker to the next one
         elif length == -2:
             # The length of the data is not given. The data is between this marker and the next one.
@@ -34,6 +42,7 @@ class Segment:
                     break
                 index += 1
             length = index - start
+            data_size = length
             index = start
 
         # Check if the file can contain all the marker's data
@@ -43,7 +52,7 @@ class Segment:
                 "The file ended before the end of the marker."
             )
 
-        segment = cls(name, marker, length, data[index : index + length])
+        segment = cls(name, marker, length, data_size, data[index : index + data_size])
         return segment
 
     @staticmethod
@@ -55,7 +64,10 @@ class Segment:
         return len(self.get_full_segment())
 
     def get_full_segment(self) -> bytes:
-        return self.marker + self.data
+        if self.data_size == self.length:
+            return self.marker + self.data
+        else:
+            return self.marker + struct.pack(">H", self.length) + self.data
 
 
 # Key: the byte marker 0xffxx
