@@ -15,9 +15,8 @@ class Jpeg:
 
         self.__parsed = False
 
-    # Private methods
-
-    def __parse(self, force=False):
+    # Public methods
+    def parse(self, force=False):
         """
         Parse the file to load its data.
         Do not load twice the data unless forced.
@@ -47,8 +46,6 @@ class Jpeg:
 
         self.data_extra = data[index:]
 
-    # Public methods
-
     # Tools
 
     def is_valid_jpeg(self) -> bool:
@@ -68,7 +65,7 @@ class Jpeg:
         Print the structure of the JPEG file.
         """
 
-        self.__parse()
+        self.parse()
 
         print("Filename:", self.path.absolute())
         print()
@@ -91,7 +88,7 @@ class Jpeg:
         The exported image is path/to/image.clean.jpg
         """
 
-        self.__parse()
+        self.parse()
 
         output = self.path.with_stem(self.path.stem + ".clean")
         with output.open("wb") as fid:
@@ -114,7 +111,7 @@ class Jpeg:
         The exported image is path/to/image.clean.jpg
         """
 
-        self.__parse()
+        self.parse()
 
         output = self.path.with_stem(self.path.stem + ".clean")
         with output.open("wb") as fid:
