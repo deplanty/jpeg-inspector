@@ -1,0 +1,19 @@
+$tab-width: 12;
+
+VerticalScroll.notebook-tab {
+    width: auto;
+    min-width: $tab-width;
+}
+
+Button.notebook-tab {
+    min-width: $tab-width;
+    background: initial;
+}
+
+Button.notebook-tab.selected {
+    background: #eeeeee;
+}
+
+TextArea#text-data {
+    width: 1fr;
+}
