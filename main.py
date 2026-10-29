@@ -37,28 +37,19 @@ if __name__ == "__main__":
 
     print()
     print("This tool has several choices:")
-    print("1. Inspect the JPEG files.")
-    print("2. Remove all metadata in a duplicated file. (output_name -> filename.clean.jpg)")
+    print("1: Remove all metadata in a duplicated file. (output_name -> filename.clean.jpg)")
     print(
-        "3. Remove Motion Picture metadata in a duplicated file. (output_name -> filename.clean.jpg)"
+        "2: Remove Motion Picture metadata in a duplicated file. "
+        "(output_name -> filename.clean.jpg)"
     )
-    print("Else: Stop.")
+    print("Else: Quit.")
     answer = input("Your choice: ")
 
     if answer == "1":
-        print()
-        for image in images:
-            image.inspect()
-            print()
-            input("Press Enter for next image...")
-            print()
-    elif answer == "2":
         for image in images:
             image.remove_metadata()
-            print()
     elif answer == "3":
         for image in images:
             image.remove_motion_photo()
-            print()
 
-    input("Press Enter to quit...")
+    input("\nPress Enter to quit...")
