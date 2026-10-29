@@ -1,4 +1,4 @@
-#!.venv/Scripts/python
+#!.venv/Scripts/textual run --dev
 
 import tkinter as tk
 from tkinter import filedialog
@@ -21,23 +21,26 @@ class JpegInspector(App):
 
         self.filename: str = ""
         self.image: Jpeg
+        # Required to ask the user to select a file
+        self.tk_root = tk.Tk()
+        self.tk_root.withdraw()
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield Horizontal(
-            Button("Browse...", id="browse", compact=True),
-            Label("filename.jpg", id="filename"),
+            Button("Browse...", id="browse", variant="primary"),
+            Label("...", id="filename"),
+            classes="browser",
         )
         yield Notebook(id="notebook")
         yield Footer()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "browse":
-            # root = tk.Tk()
-            # filename = filedialog.askopenfilename()
-            # if not filename:
-            #     return
-            filename = "C:/Users/4177349/Documents/Perso/Scripts/jpeg-inspector/data-test/example_art.MP.jpg"
+            filename = filedialog.askopenfilename()
+            if not filename:
+                return
+
             self.query_one("#filename", Label).update(filename)
             self.filename = filename
             self.load_jpeg()
@@ -48,16 +51,16 @@ class JpegInspector(App):
                     button.remove_class("selected")
                 event.button.add_class("selected")
 
-    @work(thread=True)
     def load_jpeg(self) -> None:
         notebook: Notebook = self.query_one("#notebook")
 
         self.image = Jpeg(self.filename)
         self.image.parse()
         # Populate the notebook with a tab for each segment
-        self.call_from_thread(notebook.clear)
+        notebook.clear()
         for segment in self.image.segments:
-            self.call_from_thread(notebook.add_tab, segment.name, str(segment.data))
+            notebook.add_tab(segment.name, str(segment.data))
+            notebook.refresh()
 
 
 if __name__ == "__main__":

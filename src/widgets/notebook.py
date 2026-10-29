@@ -40,3 +40,4 @@ class Notebook(HorizontalGroup):
     def __show_data(self, button: Button) -> None:
         data = self.__tab_data[button]
         self.__text_area.load_text(data)
+        self.__text_area.focus()

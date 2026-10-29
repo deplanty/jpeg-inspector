@@ -1,5 +1,16 @@
 $tab-width: 12;
 
+Horizontal.browser {
+    height: auto;
+    align: left middle;
+}
+
+Horizontal.browser > Label {
+    height: 100%;
+    content-align-vertical: middle;
+    margin-left: 1;
+}
+
 VerticalScroll.notebook-tab {
     width: auto;
     min-width: $tab-width;
@@ -14,6 +25,7 @@ Button.notebook-tab.selected {
     background: $primary;
 }
 
-TextArea#text-data {
-    width: 1fr;
+Notebook {
+    height: 1fr;
+    min-height: 0;
 }
