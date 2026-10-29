@@ -1,8 +1,7 @@
-#!.venv/Scripts/textual run --dev
+#!.venv/Scripts/python
 
 from pathlib import Path
 
-from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import HorizontalGroup, Vertical, VerticalScroll
 from textual.events import Paste
