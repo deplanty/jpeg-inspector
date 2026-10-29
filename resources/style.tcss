@@ -1,14 +1,20 @@
 $tab-width: 12;
 
-Horizontal.browser {
+/* Browser */
+
+.browser {
     height: auto;
-    align: left middle;
 }
 
-Horizontal.browser > Label {
-    height: 100%;
-    content-align-vertical: middle;
+.browser > Label {
     margin-left: 1;
+}
+
+/* Notebook */
+
+Notebook {
+    height: 1fr;
+    min-height: 0;
 }
 
 VerticalScroll.notebook-tab {
@@ -23,9 +29,4 @@ Button.notebook-tab {
 
 Button.notebook-tab.selected {
     background: $primary;
-}
-
-Notebook {
-    height: 1fr;
-    min-height: 0;
 }

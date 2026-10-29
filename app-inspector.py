@@ -1,11 +1,12 @@
 #!.venv/Scripts/textual run --dev
 
-import tkinter as tk
-from tkinter import filedialog
+from pathlib import Path
 
 from textual import work
 from textual.app import App, ComposeResult
-from textual.containers import HorizontalGroup, Horizontal, VerticalScroll
+from textual.containers import HorizontalGroup, Vertical, VerticalScroll
+from textual.events import Paste
+from textual.message import Message
 from textual.widgets import Button, Footer, Header, Label, TextArea
 
 from src.jpeg import Jpeg
@@ -20,15 +21,11 @@ class JpegInspector(App):
         super().__init__()
 
         self.filename: str = ""
-        self.image: Jpeg
-        # Required to ask the user to select a file
-        self.tk_root = tk.Tk()
-        self.tk_root.withdraw()
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
-        yield Horizontal(
-            Button("Browse...", id="browse", variant="primary"),
+        yield Vertical(
+            Label("Paste or drop a JPEG file"),
             Label("...", id="filename"),
             classes="browser",
         )
@@ -41,8 +38,8 @@ class JpegInspector(App):
             if not filename:
                 return
 
-            self.query_one("#filename", Label).update(filename)
             self.filename = filename
+            self.query_one("#filename", Label).update(filename)
             self.load_jpeg()
 
         elif event.button.has_class("tab"):
@@ -51,14 +48,38 @@ class JpegInspector(App):
                     button.remove_class("selected")
                 event.button.add_class("selected")
 
+    def on_paste(self, event: Paste) -> None:
+        path = Path(event.text.strip('"'))
+        # If the pasted texts contains only paths
+        if not path.exists():
+            self.notify(
+                f"Paste data is not a valid path\n{repr(event.text)}",
+                title="Invalid input",
+                severity="warning",
+            )
+            return
+        elif path.suffix not in (".jpg", ".jpeg"):
+            self.notify(
+                f"File is not a JPEG: {path.name}",
+                title="Invalid input",
+                severity="warning",
+            )
+            return
+        self.filename = str(path.absolute())
+        self.query_one("#filename", Label).update(self.filename)
+        self.load_jpeg()
+
     def load_jpeg(self) -> None:
         notebook: Notebook = self.query_one("#notebook")
 
-        self.image = Jpeg(self.filename)
-        self.image.parse()
+        image = Jpeg(self.filename)
+        if not image.is_valid_jpeg():
+            self.notify("The file is not a valid JPEG", severity="error")
+            return
+        image.parse()
         # Populate the notebook with a tab for each segment
         notebook.clear()
-        for segment in self.image.segments:
+        for segment in image.segments:
             notebook.add_tab(segment.name, str(segment.data))
             notebook.refresh()
 
