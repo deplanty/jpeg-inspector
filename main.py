@@ -3,7 +3,6 @@ import sys
 
 from src.jpeg import Jpeg
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Parse the JPEG files to show their structure and their metadata."
@@ -48,7 +47,7 @@ if __name__ == "__main__":
     if answer == "1":
         for image in images:
             image.remove_metadata()
-    elif answer == "3":
+    elif answer == "2":
         for image in images:
             image.remove_motion_photo()
 

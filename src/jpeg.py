@@ -105,15 +105,32 @@ class Jpeg:
         print("Output file:", output.absolute())
         print("Output size:", len(output.read_bytes()), "bytes")
 
+    def has_motion_photo(self) -> bool:
+        """
+        Return True if the image has some metadata associated with Motion Photo.
+        """
+
+        self.parse()
+        for segment in self.segments:
+            if segment.name.startswith("APP"):
+                if segment.data.startswith(b"http://"):
+                    return True
+        return False
+
     def remove_motion_photo(self):
         """
         Export a new image without the metadata associated with Motion Photo.
-        The exported image is path/to/image.clean.jpg
+        If the initial image ends with .MP.jpg export as path/to/image.jpg.
+        Else, export the image as path/to/image.static.jpg
         """
 
         self.parse()
 
-        output = self.path.with_stem(self.path.stem + ".clean")
+        if self.path.stem.endswith(".MP"):
+            stem = Path(self.path.stem).stem
+            output = self.path.with_stem(stem)
+        else:
+            output = self.path.with_stem(self.path.stem + ".static")
         with output.open("wb") as fid:
             for segment in self.segments:
                 if segment.name.startswith("APP"):
