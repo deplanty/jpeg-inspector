@@ -4,7 +4,7 @@ from .segment import Segment
 
 
 class Jpeg:
-    def __init__(self, filename: str):
+    def __init__(self, filename: str | Path):
         self.path: Path = Path(filename)
         self.segments: list[Segment] = []
         self.data_extra: bytes = b""
@@ -117,11 +117,13 @@ class Jpeg:
                     return True
         return False
 
-    def remove_motion_photo(self):
+    def remove_motion_photo(self, verbose: bool = False) -> Path:
         """
         Export a new image without the metadata associated with Motion Photo.
         If the initial image ends with .MP.jpg export as path/to/image.jpg.
         Else, export the image as path/to/image.static.jpg
+
+        Return the path of the output image.
         """
 
         self.parse()
@@ -133,13 +135,21 @@ class Jpeg:
             output = self.path.with_stem(self.path.stem + ".static")
         with output.open("wb") as fid:
             for segment in self.segments:
-                if segment.name.startswith("APP"):
+                # Remove APP1 http://adobe metadata
+                if segment.name.startswith("APP1"):
                     if segment.data.startswith(b"http://"):
+                        continue
+                # Remove APP2 MPF Metadata
+                elif segment.name.startswith("APP"):
+                    if segment.data.startswith(b"MPF"):
                         continue
 
                 fid.write(segment.get_full_segment())
 
-        print("Input file: ", self.path.absolute())
-        print("Input size: ", self.size_data, "bytes")
-        print("Output file:", output.absolute())
-        print("Output size:", len(output.read_bytes()), "bytes")
+        if verbose:
+            print("Input file: ", self.path.absolute())
+            print("Input size: ", self.size_data, "bytes")
+            print("Output file:", output.absolute())
+            print("Output size:", len(output.read_bytes()), "bytes")
+
+        return output.absolute()
