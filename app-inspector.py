@@ -3,17 +3,15 @@
 from pathlib import Path
 
 from textual.app import App, ComposeResult
-from textual.containers import HorizontalGroup, Vertical, VerticalScroll
+from textual.containers import Vertical
 from textual.events import Paste
-from textual.message import Message
-from textual.widgets import Button, Footer, Header, Label, TextArea
+from textual.widgets import Footer, Header, Label
 
 from src.jpeg import Jpeg
 from src.widgets import Notebook
 
 
 class JpegInspector(App):
-
     CSS_PATH = "./resources/style.tcss"
 
     def __init__(self) -> None:
@@ -30,22 +28,6 @@ class JpegInspector(App):
         )
         yield Notebook(id="notebook")
         yield Footer()
-
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "browse":
-            filename = filedialog.askopenfilename()
-            if not filename:
-                return
-
-            self.filename = filename
-            self.query_one("#filename", Label).update(filename)
-            self.load_jpeg()
-
-        elif event.button.has_class("tab"):
-            for button in self.query("Button.tab"):
-                if button.has_class("selected"):
-                    button.remove_class("selected")
-                event.button.add_class("selected")
 
     def on_paste(self, event: Paste) -> None:
         path = Path(event.text.strip('"'))
@@ -69,7 +51,7 @@ class JpegInspector(App):
         self.load_jpeg()
 
     def load_jpeg(self) -> None:
-        notebook: Notebook = self.query_one("#notebook")
+        notebook: Notebook = self.query_one("#notebook", expect_type=Notebook)
 
         image = Jpeg(self.filename)
         if not image.is_valid_jpeg():
@@ -81,6 +63,9 @@ class JpegInspector(App):
         for segment in image.segments:
             notebook.add_tab(segment.name, str(segment.data))
             notebook.refresh()
+        # Add the existing trailing data
+        if image.data_extra:
+            notebook.add_tab("Tail", str(image.data_extra))
 
 
 if __name__ == "__main__":

@@ -114,14 +114,18 @@ class Jpeg:
         for segment in self.segments:
             if segment.name.startswith("APP"):
                 if segment.data.startswith(b"http://"):
-                    return True
+                    if b"GCamera:MotionPhoto" in segment.data:
+                        return True
         return False
 
-    def remove_motion_photo(self, verbose: bool = False) -> Path:
+    def remove_motion_photo(self, dry: bool = False, verbose: bool = False) -> Path:
         """
         Export a new image without the metadata associated with Motion Photo.
         If the initial image ends with .MP.jpg export as path/to/image.jpg.
         Else, export the image as path/to/image.static.jpg
+
+        If dry is True, only show information without creating output images.
+        If verbose is True, print information about the input and output images.
 
         Return the path of the output image.
         """
@@ -133,23 +137,25 @@ class Jpeg:
             output = self.path.with_stem(stem)
         else:
             output = self.path.with_stem(self.path.stem + ".static")
-        with output.open("wb") as fid:
-            for segment in self.segments:
-                # Remove APP1 http://adobe metadata
-                if segment.name.startswith("APP1"):
-                    if segment.data.startswith(b"http://"):
-                        continue
-                # Remove APP2 MPF Metadata
-                elif segment.name.startswith("APP"):
-                    if segment.data.startswith(b"MPF"):
-                        continue
 
-                fid.write(segment.get_full_segment())
-
-        if verbose:
-            print("Input file: ", self.path.absolute())
-            print("Input size: ", self.size_data, "bytes")
-            print("Output file:", output.absolute())
-            print("Output size:", len(output.read_bytes()), "bytes")
+        if not dry:
+            with output.open("wb") as fid:
+                for segment in self.segments:
+                    # Remove APP1 http://adobe metadata
+                    if segment.name.startswith("APP1"):
+                        if segment.data.startswith(b"http://"):
+                            continue
+                    # Remove APP2 MPF Metadata
+                    elif segment.name.startswith("APP"):
+                        if segment.data.startswith(b"MPF"):
+                            continue
+                    # Write the segment
+                    fid.write(segment.get_full_segment())
+            # Show information about the input and output images
+            if verbose:
+                print("Input file: ", self.path.absolute())
+                print("Input size: ", self.size_data, "bytes")
+                print("Output file:", output.absolute())
+                print("Output size:", len(output.read_bytes()), "bytes")
 
         return output.absolute()
