@@ -11,6 +11,22 @@ from src.jpeg import Jpeg
 from src.widgets import Notebook
 
 
+def _bytes_to_string(b: bytes) -> str:
+    """
+    Args:
+        b (bytes): bytes object to convert to string.
+
+    Returns (str): the decoded string or the raw value of the bytes.
+    """
+
+    return str(b)
+
+    try:
+        return b.decode("utf-8")
+    except UnicodeDecodeError:
+        return str(b)
+
+
 class JpegInspector(App):
     CSS_PATH = "./resources/style.tcss"
 
@@ -34,7 +50,7 @@ class JpegInspector(App):
         # If the pasted texts contains only paths
         if not path.exists():
             self.notify(
-                f"Paste data is not a valid path\n{repr(event.text)}",
+                message=f"Paste data is not a valid path\n{event.text}",
                 title="Invalid input",
                 severity="warning",
             )
@@ -61,11 +77,11 @@ class JpegInspector(App):
         # Populate the notebook with a tab for each segment
         notebook.clear()
         for segment in image.segments:
-            notebook.add_tab(segment.name, str(segment.data))
+            notebook.add_tab(segment.name, _bytes_to_string(segment.data))
             notebook.refresh()
         # Add the existing trailing data
         if image.data_extra:
-            notebook.add_tab("Tail", str(image.data_extra))
+            notebook.add_tab("Tail", _bytes_to_string(image.data_extra))
 
 
 if __name__ == "__main__":

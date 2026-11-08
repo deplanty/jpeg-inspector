@@ -3,6 +3,15 @@ from pathlib import Path
 from .segment import Segment
 
 
+class InvalidJpegError(Exception):
+    def __init__(self, path: str):
+        super().__init__()
+        self.path: str = path
+
+    def __str__(self) -> str:
+        return f"{self.path} is not a valid JPEG."
+
+
 class Jpeg:
     def __init__(self, filename: str | Path):
         self.path: Path = Path(filename)
@@ -30,7 +39,7 @@ class Jpeg:
 
         # Check if the file is a valid JPEG
         if not self.is_valid_jpeg():
-            raise Exception(f"{self.path} is not a valid JPEG.")
+            raise InvalidJpegError(str(self.path))
 
         # Parse the file to find the markers and their data
         data = self.path.read_bytes()
@@ -93,9 +102,7 @@ class Jpeg:
         output = self.path.with_stem(self.path.stem + ".clean")
         with output.open("wb") as fid:
             for segment in self.segments:
-                if segment.name.startswith("APP"):
-                    continue
-                elif segment.name == "COM":
+                if segment.name.startswith("APP") or segment.name == "COM":
                     continue
 
                 fid.write(segment.get_full_segment())
@@ -111,11 +118,14 @@ class Jpeg:
         """
 
         self.parse()
+        segment: Segment
         for segment in self.segments:
-            if segment.name.startswith("APP"):
-                if segment.data.startswith(b"http://"):
-                    if b"GCamera:MotionPhoto" in segment.data:
-                        return True
+            if not segment.name.startswith("APP"):
+                continue
+            if not segment.data.startswith(b"http://"):
+                continue
+            if b"GCamera:MotionPhoto" in segment.data:
+                return True
         return False
 
     def remove_motion_photo(self, dry: bool = False, verbose: bool = False) -> Path:
@@ -142,15 +152,16 @@ class Jpeg:
             with output.open("wb") as fid:
                 for segment in self.segments:
                     # Remove APP1 http://adobe metadata
-                    if segment.name.startswith("APP1"):
-                        if segment.data.startswith(b"http://"):
-                            continue
-                    # Remove APP2 MPF Metadata
-                    elif segment.name.startswith("APP"):
-                        if segment.data.startswith(b"MPF"):
-                            continue
+                    if (
+                        segment.name.startswith("APP1")
+                        and segment.data.startswith(b"http://")
+                        or segment.name.startswith("APP")
+                        and segment.data.startswith(b"MPF")
+                    ):
+                        continue
                     # Write the segment
                     fid.write(segment.get_full_segment())
+
             # Show information about the input and output images
             if verbose:
                 print("Input file: ", self.path.absolute())
