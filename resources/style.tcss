@@ -6,8 +6,9 @@ $tab-width: 12;
     height: auto;
 }
 
-.browser > Label {
+.browser {
     margin-left: 1;
+    margin-right: 1;
 }
 
 /* Notebook */
