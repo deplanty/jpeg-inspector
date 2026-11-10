@@ -9,7 +9,7 @@ from textual.events import Paste
 from textual.widgets import Footer, Header, Label, Select
 
 from src.enums import DisplayFormat
-from src.jpeg import Jpeg
+from src.objects.jpeg import Jpeg
 from src.widgets import Notebook
 
 
