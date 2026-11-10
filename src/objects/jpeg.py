@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from .bytes_data import BytesData
 from .segment import Segment
 
 
@@ -53,7 +54,7 @@ class Jpeg:
             if segment.name == "EOI":
                 break
 
-        self.data_extra = data[index:]
+        self.data_extra = BytesData(data[index:])
 
     # Tools
 
