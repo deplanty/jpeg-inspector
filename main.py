@@ -8,9 +8,16 @@ if __name__ == "__main__":
         description="Parse the JPEG files to show their structure and their metadata."
     )
     parser.add_argument("paths", nargs="+", help="The JPEG files or directories to parse.")
-    parser.add_argument("-d", "--dry", action="store_true", default=False,
-                        help="Run the process without doing anything.")
-    parser.add_argument("-v", "--verbose", action="store_true", default=False, help="Show information.")
+    parser.add_argument(
+        "-d",
+        "--dry",
+        action="store_true",
+        default=False,
+        help="Run the process without doing anything.",
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", default=False, help="Show information."
+    )
 
     args: argparse.Namespace = parser.parse_args()
 

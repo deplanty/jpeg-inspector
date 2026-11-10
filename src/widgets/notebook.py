@@ -1,42 +1,20 @@
+from typing import TYPE_CHECKING
+
 from textual.app import ComposeResult
 from textual.containers import HorizontalGroup, VerticalScroll
 from textual.widgets import Button, TextArea
 
 from src.enums import DisplayFormat
 
-
-def _bytes_to_string(b: bytes) -> str:
-    """
-    Args:
-        b (bytes): bytes object to convert to string.
-
-    Returns (str): the decoded string or the raw value of the bytes.
-    """
-
-    try:
-        return b.decode("utf-8")
-    except UnicodeDecodeError as e:
-        print(e)
-        return str(b)
-
-
-def _bytes_to_hex(b: bytes, line_width: int = 16) -> str:
-    lines: list[str] = []
-    line: list[str] = []
-    for index in range(len(b)):
-        if index % line_width == 0:
-            lines.append(" ".join(line))
-            line = [f"{index:08x}"]
-        line.append(f"{b[index]:02x}")
-
-    return "\n".join(lines)
+if TYPE_CHECKING:
+    from src.objects.bytes_data import BytesData
 
 
 class Notebook(HorizontalGroup):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # The data associated with each tab
-        self.__tab_data: dict[Button, bytes] = {}
+        self.__tab_data: dict[Button, "BytesData"] = {}
         # The text area showing the data
         self.__text_area: TextArea
         # How the data is shown (raw, plain or hex)
@@ -87,15 +65,15 @@ class Notebook(HorizontalGroup):
         if button is None:
             button = self.query_one("Button.notebook-tab.selected", Button)
 
-        data: bytes = self.__tab_data[button]
+        data: "BytesData" = self.__tab_data[button]
         text: str
         match self.__display_format:
             case DisplayFormat.RAW:
-                text = str(data)
+                text = data.to_raw_str()
             case DisplayFormat.PLAIN:
-                text = _bytes_to_string(data)
+                text = data.to_str()
             case DisplayFormat.HEX:
-                text = _bytes_to_hex(data)
+                text = data.to_hex()
             case _:
                 print("Other")
                 text = str(data)

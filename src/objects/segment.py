@@ -1,5 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import struct
+
+from src.objects.bytes_data import BytesData
 
 
 @dataclass
@@ -13,7 +15,7 @@ class Segment:
     #: The size of the data (without the 2 bytes for the length when present)
     data_size: int
     #: The data contained in the marker (without the 2 bytes for the length when present)
-    data: bytes = b""
+    data: BytesData
 
     @classmethod
     def parse(cls, data: bytes, index: int) -> "Segment":
@@ -52,7 +54,7 @@ class Segment:
                 "The file ended before the end of the marker."
             )
 
-        segment = cls(name, marker, length, data_size, data[index : index + data_size])
+        segment = cls(name, marker, length, data_size, BytesData(data[index : index + data_size]))
         return segment
 
     @staticmethod
