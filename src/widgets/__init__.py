@@ -1,1 +1,1 @@
-from .notebook import Notebook
+from .notebook import Notebook as Notebook

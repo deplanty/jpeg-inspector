@@ -4,12 +4,12 @@ from pathlib import Path
 
 from textual import on
 from textual.app import App, ComposeResult
-from textual.containers import Vertical, HorizontalGroup
+from textual.containers import HorizontalGroup, Vertical
 from textual.events import Paste
 from textual.widgets import Footer, Header, Label, Select
 
-from src.enums import DisplayFormat
 from src.objects.jpeg import Jpeg
+from src.utils.enums import DisplayFormat
 from src.widgets import Notebook
 
 

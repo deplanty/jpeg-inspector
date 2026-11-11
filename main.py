@@ -1,7 +1,7 @@
 import argparse
 from pathlib import Path
 
-from src.jpeg import Jpeg
+from src.objects import Jpeg
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         elif path.is_file():
             paths.append(path)
         else:
-            raise Exception(f"Path {path} is unknown.")
+            raise ValueError(f"Path {path} is unknown.")
 
     # Preload the files
     images: list[Jpeg] = []
@@ -72,14 +72,12 @@ if __name__ == "__main__":
         print(dir_current)
         # To show the progress
         progress_total = len(images)
-        progress = 0
-        for image in images:
+        for progress, image in enumerate(images):
             # show current folder
             if dir_current != image.path.parent:
                 dir_current = image.path.parent
                 print(dir_current)
             # Show progress
-            progress += 1
             print(
                 f"  {progress:>{len(str(progress_total))}}/{progress_total} "
                 f"{image.path.name} {image.has_motion_photo()}"
@@ -90,14 +88,12 @@ if __name__ == "__main__":
         print(dir_current)
         # To show the progress
         progress_total = len(images)
-        progress = 0
-        for image in images:
+        for progress, image in enumerate(images):
             # show current folder
             if dir_current != image.path.parent:
                 dir_current = image.path.parent
                 print(dir_current)
             # Show progress
-            progress += 1
             print(f"  {progress:>{len(str(progress_total))}}/{progress_total} ", end="")
             if image.has_motion_photo():
                 output = image.remove_motion_photo(args.dry, args.verbose)

@@ -1,0 +1,2 @@
+class IncompleteMarkerError(Exception):
+    pass

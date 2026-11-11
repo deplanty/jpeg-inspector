@@ -1,20 +1,21 @@
-from dataclasses import dataclass, field
 import struct
+from dataclasses import dataclass
 
 from src.objects.bytes_data import BytesData
+from src.utils.exceptions import IncompleteMarkerError
 
 
 @dataclass
 class Segment:
-    #: The name of the marker (e.g. SOI)
+    # The name of the marker (e.g. SOI)
     name: str
-    #: The marker's bytes (e.g. 0xFFD8)
+    # The marker's bytes (e.g. 0xFFD8)
     marker: bytes
-    #: The length of the marker's data (without the 2 bytes of the marker)
+    # The length of the marker's data (without the 2 bytes of the marker)
     length: int
-    #: The size of the data (without the 2 bytes for the length when present)
+    # The size of the data (without the 2 bytes for the length when present)
     data_size: int
-    #: The data contained in the marker (without the 2 bytes for the length when present)
+    # The data contained in the marker (without the 2 bytes for the length when present)
     data: BytesData
 
     @classmethod
@@ -23,6 +24,7 @@ class Segment:
         name, length = MARKERS[marker[1]]
         index += 2
 
+        data_size = 0
         # Info about reading the markers: https://www.media.mit.edu/pia/Research/deepview/exif.html
         # The marker has no size (e.g. SOI and EOI) or a given size (e.g. DRI)
         if length >= 0:
@@ -49,7 +51,7 @@ class Segment:
 
         # Check if the file can contain all the marker's data
         if index + length > len(data):
-            raise Exception(
+            raise IncompleteMarkerError(
                 f"The segment with marker {marker} is incomplete. "
                 "The file ended before the end of the marker."
             )
