@@ -64,6 +64,10 @@ class XmpStandard(Metadata):
         ):
             namespaces[prefix] = uri
 
+        # Do nothing if the namespace Container is not present
+        if "Container" not in namespaces:
+            return []
+
         # Parse the xml with xmp data
         tree = ElementTree.fromstring(self.payload.decode())
         # Find the node with the sequence of items contained in the files

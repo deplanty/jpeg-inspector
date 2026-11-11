@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.objects.metadata import Metadata
+from src.objects.metadata import Metadata, XmpStandard
 from src.utils.exceptions import InvalidJpegError
 
 from .segment import Segment
@@ -47,6 +47,11 @@ class Jpeg:
             if segment.name == "EOI":
                 break
 
+        # Some Jpeg files have more data after EOI
+        for segment in self.segments:
+            if isinstance(segment.data, XmpStandard):
+                print(segment.data.items)
+
         self.data_extra = Metadata(data[index:])
 
     # Tools
@@ -73,6 +78,6 @@ class Jpeg:
                 continue
             if not segment.data.startswith(b"http://"):
                 continue
-            if b"GCamera:MotionPhoto" in segment.data:
+            if b'GCamera:MotionPhoto="1"' in segment.data:
                 return True
         return False
