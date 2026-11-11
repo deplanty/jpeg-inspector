@@ -1,4 +1,4 @@
-from src.objects.metadata import Exif, IccProfile, Jfif, Mpf, XmpExtension, XmpStandard
+from src.objects.metadata import Exif, IccProfile, Jfif, Mpf, XmpExtension, XmpStandard, get
 
 exif = b"Exif\x00\x00II*"
 icc_profile = b"ICC_PROFILE\x00\x01\x01\x00\x00\x0cHLino"
@@ -60,3 +60,12 @@ def test_metadata_xmp_standard():
     assert XmpStandard.has_signature(mpf) == False
     assert XmpStandard.has_signature(xmp_extension) == False
     assert XmpStandard.has_signature(xmp_standard) == True
+
+
+def test_get_metadata():
+    assert isinstance(get(exif), Exif)
+    assert isinstance(get(icc_profile), IccProfile)
+    assert isinstance(get(jfif), Jfif)
+    assert isinstance(get(mpf), Mpf)
+    assert isinstance(get(xmp_extension), XmpExtension)
+    assert isinstance(get(xmp_standard), XmpStandard)

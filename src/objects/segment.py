@@ -1,7 +1,7 @@
 import struct
 from dataclasses import dataclass
 
-from src.objects.bytes_data import BytesData
+from src.objects import metadata
 from src.utils.exceptions import IncompleteMarkerError
 
 
@@ -16,7 +16,7 @@ class Segment:
     # The size of the data (without the 2 bytes for the length when present)
     data_size: int
     # The data contained in the marker (without the 2 bytes for the length when present)
-    data: BytesData
+    data: metadata.Metadata
 
     @classmethod
     def parse(cls, data: bytes, index: int) -> "Segment":
@@ -57,8 +57,9 @@ class Segment:
             )
 
         # Determine the type of metadata contained in the data
+        data_obj = metadata.get(data[index : index + data_size])
 
-        segment = cls(name, marker, length, data_size, BytesData(data[index : index + data_size]))
+        segment = cls(name, marker, length, data_size, data_obj)
         return segment
 
     @staticmethod

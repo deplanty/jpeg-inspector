@@ -7,14 +7,14 @@ from textual.widgets import Button, TextArea
 from src.utils.enums import DisplayFormat
 
 if TYPE_CHECKING:
-    from src.objects.bytes_data import BytesData
+    from objects.metadata import Metadata
 
 
 class Notebook(HorizontalGroup):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # The data associated with each tab
-        self.__tab_data: dict[Button, BytesData] = {}
+        self.__tab_data: dict[Button, Metadata] = {}
         # The text area showing the data
         self.__text_area: TextArea
         # How the data is shown (raw, plain or hex)
@@ -65,7 +65,7 @@ class Notebook(HorizontalGroup):
         if button is None:
             button = self.query_one("Button.notebook-tab.selected", Button)
 
-        data: BytesData = self.__tab_data[button]
+        data: Metadata = self.__tab_data[button]
         text: str
         match self.__display_format:
             case DisplayFormat.RAW:

@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from .bytes_data import BytesData
+from src.objects.metadata import Metadata
+
 from .segment import Segment
 
 
@@ -54,7 +55,7 @@ class Jpeg:
             if segment.name == "EOI":
                 break
 
-        self.data_extra = BytesData(data[index:])
+        self.data_extra = Metadata(data[index:])
 
     # Tools
 
