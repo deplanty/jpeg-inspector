@@ -56,6 +56,8 @@ class Segment:
                 "The file ended before the end of the marker."
             )
 
+        # Determine the type of metadata contained in the data
+
         segment = cls(name, marker, length, data_size, BytesData(data[index : index + data_size]))
         return segment
 

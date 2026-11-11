@@ -8,5 +8,11 @@ dependencies = [
     "textual>=8.2.8",
 ]
 
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "textual-dev>=1.8.0",
+]
+
 [tool.ruff]
 line-length = 100

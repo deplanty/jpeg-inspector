@@ -22,7 +22,7 @@ class BytesData(bytes):
                 line_str = ""
             # The hex representation of the byte
             line_hex.append(f"{self[index]:02x}")
-            # The string represtation of the byte
+            # The string representation of the byte
             char = chr(self[index])
             if not char.isprintable():
                 char = "."
