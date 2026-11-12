@@ -42,21 +42,12 @@ class XmpStandard(Metadata):
     def __init__(self, data):
         super().__init__()
         # Cache the result of the parse method
-        self._items: list[XmpStandardItem] = []
-        self._parsed: bool = False
-
-    @property
-    def items(self) -> list[XmpStandardItem]:
-        # If the metadata has not been parsed, parse it
-        if not self._parsed:
-            self.parse()
-
-        return self._items
+        self.items: list[XmpStandardItem] = []
+        self.tree: ElementTree.Element
+        self.parse()
 
     def parse(self) -> list[XmpStandardItem]:
         """Return the sequence of items contained in the JPEG file."""
-
-        self._parsed = True
 
         # Load all the namespaces to read the xml and use the URI
         for events, (prefix, uri) in ElementTree.iterparse(
@@ -69,14 +60,59 @@ class XmpStandard(Metadata):
             return []
 
         # Parse the xml with xmp data
-        tree = ElementTree.fromstring(self.payload.decode())
+        self.tree = ElementTree.fromstring(self.payload.decode())
         # Find the node with the sequence of items contained in the files
-        sequence = tree.find(".//Container:Directory/rdf:Seq", namespaces)
+        sequence = self.tree.find(".//Container:Directory/rdf:Seq", namespaces)
         if not sequence:
             return []
         # Get sequence of the items
-        self._items: list[XmpStandardItem] = []
+        self.items: list[XmpStandardItem] = []
         for item in sequence.findall("rdf:li/Container:Item", namespaces):
-            self._items.append(XmpStandardItem.from_element(item))
+            self.items.append(XmpStandardItem.from_element(item))
 
-        return self._items
+        return self.items
+
+    def set_attribute(self, xpath: str, attribute: str, value: str):
+        element = self.tree.find(xpath, namespaces)
+        if not element:
+            return
+
+        attribute = self.with_namespace(attribute)
+        element.attrib[attribute] = str(value)
+
+    def remove_attribute(self, xpath: str, attribute: str):
+        element = self.tree.find(xpath, namespaces)
+        if not element:
+            return
+
+        attribute = self.with_namespace(attribute)
+        element.attrib.pop(attribute)
+
+    def remove_elements(self, xpath: str, where: dict[str, str]):
+        elements = self.tree.findall(xpath, namespaces)
+        if not elements:
+            return
+
+        trash: list[ElementTree.Element] = []
+        for element in elements:
+            for attrib, value in where.items():
+                attrib = self.with_namespace(attrib)
+                if element.attrib[attrib] != value:
+                    break
+            else:
+                # If an element passes through all the filters
+                trash.append(element)
+
+        print(ElementTree.tostring(self.tree))
+        for element in trash:
+            print(element)
+            elements.remove(element)
+        print(ElementTree.tostring(self.tree))
+
+    def with_namespace(self, item: str) -> str:
+        # If a namespace is used for the attribute
+        if ":" in item:
+            space, key = item.split(":")
+            namespace = namespaces[space]
+            item = f"{{{namespace}}}{key}"
+        return item

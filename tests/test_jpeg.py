@@ -15,3 +15,4 @@ def test_parse_art_mp():
     jpeg = Jpeg(filename)
     jpeg.parse()
     assert "GainMap" in jpeg.xmp_data
+    assert "MotionPhoto" in jpeg.xmp_data
