@@ -27,3 +27,6 @@ class JpegImage:
                 break
 
         return cls(segments)
+
+    def as_bytes(self) -> bytes:
+        return b"".join(segment.get_full_segment() for segment in self.segments)
