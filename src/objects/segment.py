@@ -76,10 +76,6 @@ class Segment:
     def is_marker_valid(marker: int) -> bool:
         return marker in MARKERS
 
-    @property
-    def size(self) -> int:
-        return len(self.get_full_segment())
-
     def get_full_segment(self) -> bytes:
         if self.data_size == self.length:
             return self.marker + self.data

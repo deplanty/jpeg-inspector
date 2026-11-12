@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from src.objects.metadata import Metadata, XmpStandard
+from src.objects.metadata import Metadata
 
 from .jpeg_image import JpegImage
 from .segment import Segment
@@ -53,7 +53,7 @@ class Jpeg:
 
         self.parse()
         segment: Segment
-        for segment in self.segments:
+        for segment in self.image.segments:
             if not segment.name.startswith("APP"):
                 continue
             if not segment.data.startswith(b"http://"):

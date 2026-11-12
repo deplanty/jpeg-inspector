@@ -6,4 +6,5 @@ def test_load_jpeg():
     jpeg = Jpeg(filename)
     jpeg.parse()
     assert len(jpeg.image.segments) == 26
+    assert jpeg.size_data == len(jpeg.image)
     assert jpeg.extra_data == b""
