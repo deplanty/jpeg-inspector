@@ -7,5 +7,5 @@ class InvalidJpegError(Exception):
         return f"{self.path} is not a valid JPEG."
 
 
-class IncompleteMarkerError(Exception):
+class SegmentMarkerError(Exception):
     pass

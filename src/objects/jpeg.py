@@ -1,16 +1,16 @@
 from pathlib import Path
 
 from src.objects.metadata import Metadata, XmpStandard
-from src.utils.exceptions import InvalidJpegError
 
+from .jpeg_image import JpegImage
 from .segment import Segment
 
 
 class Jpeg:
     def __init__(self, filename: str | Path):
         self.path: Path = Path(filename)
-        self.segments: list[Segment] = []
-        self.data_extra: bytes = b""
+        self.image: JpegImage
+        self.extra_data: Metadata
 
         with self.path.open("r") as fid:
             fid.seek(0, 2)  # End of file
@@ -28,31 +28,11 @@ class Jpeg:
         if self.__parsed and not force:
             return
 
-        self.segments.clear()
-        self.data_extra = b""
+        with self.path.open("rb") as fid:
+            self.image = JpegImage.parse(fid)
 
-        # Check if the file is a valid JPEG
-        if not self.is_valid_jpeg():
-            raise InvalidJpegError(str(self.path))
-
-        # Parse the file to find the markers and their data
-        data = self.path.read_bytes()
-        index = 0
-        while index < self.size_data:
-            segment = Segment.parse(data, index)
-            index += segment.size
-            self.segments.append(segment)
-
-            # The parser reached the end of the image
-            if segment.name == "EOI":
-                break
-
-        # Some Jpeg files have more data after EOI
-        for segment in self.segments:
-            if isinstance(segment.data, XmpStandard):
-                print(segment.data.items)
-
-        self.data_extra = Metadata(data[index:])
+            # Some Jpeg files have more data after EOI
+            self.extra_data = Metadata(fid.read())
 
     # Tools
 

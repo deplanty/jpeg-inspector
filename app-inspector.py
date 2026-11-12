@@ -71,19 +71,19 @@ class JpegInspector(App):
     def load_jpeg(self) -> None:
         notebook: Notebook = self.query_one("#notebook", expect_type=Notebook)
 
-        image = Jpeg(self.filename)
-        if not image.is_valid_jpeg():
+        jpeg = Jpeg(self.filename)
+        if not jpeg.is_valid_jpeg():
             self.notify("The file is not a valid JPEG", severity="error")
             return
-        image.parse()
+        jpeg.parse()
         # Populate the notebook with a tab for each segment
         notebook.clear()
-        for segment in image.segments:
+        for segment in jpeg.image.segments:
             notebook.add_tab(segment.name, segment.data)
             notebook.refresh()
         # Add the existing trailing data
-        if image.data_extra:
-            notebook.add_tab("Tail", image.data_extra)
+        if jpeg.extra_data:
+            notebook.add_tab("Tail", jpeg.extra_data)
 
 
 if __name__ == "__main__":

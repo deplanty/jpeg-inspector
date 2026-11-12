@@ -1,8 +1,9 @@
 import struct
 from dataclasses import dataclass
+from typing import BinaryIO
 
 from src.objects import metadata
-from src.utils.exceptions import IncompleteMarkerError
+from src.utils.exceptions import SegmentMarkerError
 
 
 @dataclass
@@ -18,47 +19,56 @@ class Segment:
     # The data contained in the marker (without the 2 bytes for the length when present)
     data: metadata.Metadata
 
-    @classmethod
-    def parse(cls, data: bytes, index: int) -> "Segment":
-        marker = data[index : index + 2]
-        name, length = MARKERS[marker[1]]
-        index += 2
+    def __len__(self) -> int:
+        return len(self.get_full_segment())
 
-        data_size = 0
+    @classmethod
+    def parse(cls, fid: BinaryIO) -> "Segment":
+        marker = fid.read(2)
+        name, length = MARKERS[marker[1]]
+
         # Info about reading the markers: https://www.media.mit.edu/pia/Research/deepview/exif.html
         # The marker has no size (e.g. SOI and EOI) or a given size (e.g. DRI)
+        data_size = 0
         if length >= 0:
             data_size = length
         # The marker has a variable size given by the next 2 bytes
         elif length == -1:
             # Read 2 bytes of data: >H (big endian unsigned short)
             # The length contains the 2 bytes indicating the size of the data
-            length, *_ = struct.unpack(">H", data[index : index + 2])
+            length, *_ = struct.unpack(">H", fid.read(2))
             data_size = length - 2
-            index += 2
         # The marker has a variable size: from this marker to the next one
         elif length == -2:
-            # The length of the data is not given. The data is between this marker and the next one.
             # In this data, if a 0xff value is followed by a 0x00 it is a value and not a new marker.
-            start = index
-            while index < len(data):
-                if data[index] == 0xFF and cls.is_marker_valid(data[index + 1]):
+            start = fid.tell()
+            previous_byte = 0x00
+            while True:
+                byte: bytes = fid.read(1)
+                # End of file without a marker
+                if byte == b"":
+                    raise SegmentMarkerError(
+                        f"The segment with marker {marker} is incomplete. "
+                        "The file ended before the end of the marker."
+                    )
+                value: int = int.from_bytes(byte)
+                if previous_byte == 0xFF and cls.is_marker_valid(value):
                     break
-                index += 1
-            length = index - start
+                previous_byte = value
+            # A marker as been found, so the parser go back two bytes
+            fid.seek(-2, 1)
+            length = fid.tell() - start
             data_size = length
-            index = start
-
-        # Check if the file can contain all the marker's data
-        if index + length > len(data):
-            raise IncompleteMarkerError(
-                f"The segment with marker {marker} is incomplete. "
-                "The file ended before the end of the marker."
+            # Go back to the start of the parser
+            fid.seek(start, 0)
+        # If the marker has an unrecognised length
+        else:
+            raise SegmentMarkerError(
+                f"The segment with marker {marker} has an unrecognised length {length}."
             )
 
         # Determine the type of metadata contained in the data
-        data_obj = metadata.get(data[index : index + data_size])
-
+        data_obj = metadata.get(fid.read(data_size))
         segment = cls(name, marker, length, data_size, data_obj)
         return segment
 
@@ -81,6 +91,7 @@ class Segment:
 # Values:
 #   0: marker name
 #   1: size in bytes
+#      >=0 for known size.
 #      -1 for variable size where the length is after their marker.
 #      -2 for variable size where no length is given.
 MARKERS: dict[int, tuple[str, int]] = {
