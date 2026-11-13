@@ -8,7 +8,7 @@ from textual.containers import HorizontalGroup, Vertical
 from textual.events import Paste
 from textual.widgets import Footer, Header, Label, Select
 
-from src.objects.jpeg import Jpeg
+from src.objects.jpeg import Jpeg, JpegImage
 from src.utils.enums import DisplayFormat
 from src.widgets import Notebook
 
@@ -76,14 +76,22 @@ class JpegInspector(App):
             self.notify("The file is not a valid JPEG", severity="error")
             return
         jpeg.parse()
-        # Populate the notebook with a tab for each segment
+        # Populate the notebook with a tab with the main image
         notebook.clear()
         for segment in jpeg.image.segments:
             notebook.add_tab(segment.name, segment.data)
             notebook.refresh()
-        # Add the existing trailing data
+        # Add the tabs for the xmp data
+        for xmp_data in jpeg.xmp_data.values():
+            if isinstance(xmp_data, JpegImage):
+                for segment in xmp_data.segments:
+                    notebook.add_tab(segment.name, segment.data)
+                    notebook.refresh()
+            else:
+                notebook.add_tab("XMP", xmp_data)
+        # Add the extra data
         if jpeg.extra_data:
-            notebook.add_tab("Tail", jpeg.extra_data)
+            notebook.add_tab("Extra", jpeg.extra_data)
 
 
 if __name__ == "__main__":

@@ -52,7 +52,7 @@ class Jpeg:
                         self.xmp_data[xmp_item.semantic] = image
                     # Parse the videos (Motion Photo, ...)
                     elif xmp_item.mime == "video/mp4":
-                        self.xmp_data[xmp_item.semantic] = fid.read(xmp_item.length)
+                        self.xmp_data[xmp_item.semantic] = Metadata(fid.read(xmp_item.length))
 
                     # Skip the padding after the data
                     fid.read(xmp_item.padding)
@@ -67,12 +67,10 @@ class Jpeg:
             fid.write(self.image.as_bytes())
             # Write the extra data found in the XMP Standard segment
             for xmp_data in self.xmp_data.values():
-                if isinstance(xmp_data, bytes):
-                    fid.write(xmp_data)
-                elif isinstance(xmp_data, JpegImage):
+                if isinstance(xmp_data, (Metadata, JpegImage)):
                     fid.write(xmp_data.as_bytes())
             # Write the additional data found
-            fid.write(self.extra_data)
+            fid.write(self.extra_data.as_bytes())
 
     # Tools
 

@@ -1,20 +1,28 @@
-class Metadata(bytes):
+class Metadata:
     signature: bytes = b""
     name: str = ""
 
-    @property
-    def payload(self) -> bytes:
-        return self[len(self.signature) :]
+    def __init__(self, data: bytes):
+        self.payload = data[len(self.signature) :]
+
+    def __len__(self) -> int:
+        return len(self.as_bytes())
+
+    def __contains__(self, value: bytes) -> bool:
+        return value in self.payload
 
     @classmethod
     def has_signature(cls, data: bytes) -> bool:
         return data.startswith(cls.signature)
 
+    def as_bytes(self) -> bytes:
+        return self.signature + self.payload
+
     def to_raw_str(self) -> str:
         if self.name:
             return f"{self.name}\n{self.payload!s}"
         else:
-            return str(self)
+            return str(self.as_bytes())
 
     def to_str(self) -> str:
         try:

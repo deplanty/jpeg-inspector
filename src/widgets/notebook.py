@@ -76,7 +76,7 @@ class Notebook(HorizontalGroup):
                 text = data.to_hex()
             case _:
                 print("Other")
-                text = str(data)
+                text = data.to_raw_str()
 
         self.__text_area.load_text(text)
         self.__text_area.focus()

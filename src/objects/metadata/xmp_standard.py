@@ -39,12 +39,15 @@ class XmpStandard(Metadata):
     signature = b"http://ns.adobe.com/xap/1.0/\x00"
     name = "XMP standard"
 
-    def __init__(self, data):
-        super().__init__()
+    def __init__(self, data: bytes):
+        super().__init__(data)
         # Cache the result of the parse method
         self.items: list[XmpStandardItem] = []
         self.tree: ElementTree.Element
         self.parse()
+
+    def _update_payload(self) -> None:
+        self.payload = ElementTree.tostring(self.tree)
 
     def parse(self) -> list[XmpStandardItem]:
         """Return the sequence of items contained in the JPEG file."""
@@ -54,6 +57,8 @@ class XmpStandard(Metadata):
             BytesIO(self.payload), events=["start-ns"]
         ):
             namespaces[prefix] = uri
+            # Register the namespaces to write the correct name when calling ElementTree.tostring
+            ElementTree.register_namespace(prefix, uri)
 
         # Do nothing if the namespace Container is not present
         if "Container" not in namespaces:
@@ -79,6 +84,7 @@ class XmpStandard(Metadata):
 
         attribute = self.with_namespace(attribute)
         element.attrib[attribute] = str(value)
+        self._update_payload()
 
     def remove_attribute(self, xpath: str, attribute: str):
         element = self.tree.find(xpath, namespaces)
@@ -87,27 +93,18 @@ class XmpStandard(Metadata):
 
         attribute = self.with_namespace(attribute)
         element.attrib.pop(attribute)
+        self._update_payload()
 
-    def remove_elements(self, xpath: str, where: dict[str, str]):
+    def remove_elements(self, xpath: str):
         elements = self.tree.findall(xpath, namespaces)
         if not elements:
             return
 
-        trash: list[ElementTree.Element] = []
+        parent = self.tree.find(xpath + "/..", namespaces)
         for element in elements:
-            for attrib, value in where.items():
-                attrib = self.with_namespace(attrib)
-                if element.attrib[attrib] != value:
-                    break
-            else:
-                # If an element passes through all the filters
-                trash.append(element)
+            parent.remove(element)
 
-        print(ElementTree.tostring(self.tree))
-        for element in trash:
-            print(element)
-            elements.remove(element)
-        print(ElementTree.tostring(self.tree))
+        self._update_payload()
 
     def with_namespace(self, item: str) -> str:
         # If a namespace is used for the attribute

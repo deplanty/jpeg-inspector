@@ -12,10 +12,6 @@ class Segment:
     name: str
     # The marker's bytes (e.g. 0xFFD8)
     marker: bytes
-    # The length of the marker's data (without the 2 bytes of the marker)
-    length: int
-    # The size of the data (without the 2 bytes for the length when present)
-    data_size: int
     # The data contained in the marker (without the 2 bytes for the length when present)
     data: metadata.Metadata
 
@@ -69,7 +65,7 @@ class Segment:
 
         # Determine the type of metadata contained in the data
         data_obj = metadata.get(fid.read(data_size))
-        segment = cls(name, marker, length, data_size, data_obj)
+        segment = cls(name, marker, data_obj)
         return segment
 
     @staticmethod
@@ -77,10 +73,14 @@ class Segment:
         return marker in MARKERS
 
     def get_full_segment(self) -> bytes:
-        if self.data_size == self.length:
-            return self.marker + self.data
-        else:
-            return self.marker + struct.pack(">H", self.length) + self.data
+        _, length = MARKERS[self.marker[1]]
+        # No length is given
+        if length >= 0 or length == -2:
+            return self.marker + self.data.as_bytes()
+        # A length is specified
+        elif length == -1:
+            # len + 2 to include the bytes for the length
+            return self.marker + struct.pack(">H", len(self.data) + 2) + self.data.as_bytes()
 
 
 # Key: the byte marker 0xffxx
