@@ -68,7 +68,7 @@ class XmpStandard(Metadata):
         self.tree = ElementTree.fromstring(self.payload.decode())
         # Find the node with the sequence of items contained in the files
         sequence = self.tree.find(".//Container:Directory/rdf:Seq", namespaces)
-        if not sequence:
+        if sequence is None:
             return []
         # Get sequence of the items
         self.items: list[XmpStandardItem] = []

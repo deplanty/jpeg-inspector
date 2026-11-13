@@ -7,7 +7,7 @@ def test_parse_flower():
     jpeg.parse()
     assert len(jpeg.image.segments) == 26
     assert jpeg.size_data == len(jpeg.image)
-    assert jpeg.extra_data == b""
+    assert jpeg.extra_data.as_bytes() == b""
 
 
 def test_parse_art_mp():
