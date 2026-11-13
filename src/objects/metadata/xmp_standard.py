@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from io import BytesIO
+from typing import Any
 from xml.etree import ElementTree
 
 from .metadata import Metadata
@@ -41,6 +42,7 @@ class XmpStandard(Metadata):
 
     def __init__(self, data: bytes):
         super().__init__(data)
+
         # Cache the result of the parse method
         self.items: list[XmpStandardItem] = []
         self.tree: ElementTree.Element
@@ -76,6 +78,14 @@ class XmpStandard(Metadata):
             self.items.append(XmpStandardItem.from_element(item))
 
         return self.items
+
+    def get_attribute(self, xpath: str, attribute: str) -> None | Any:
+        element = self.tree.find(xpath, namespaces)
+        if not element:
+            return
+
+        attribute = self.with_namespace(attribute)
+        return element.attrib[attribute]
 
     def set_attribute(self, xpath: str, attribute: str, value: str):
         element = self.tree.find(xpath, namespaces)

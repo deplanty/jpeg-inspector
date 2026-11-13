@@ -4,7 +4,7 @@ from .jfif import Jfif
 from .jfxx import Jfxx
 from .metadata import Metadata
 from .mpf import Mpf
-from .xmp_extension import XmpExtension
+from .xmp_extension import XmpExtensionFragment
 from .xmp_standard import XmpStandard
 
 
@@ -19,8 +19,8 @@ def get(data: bytes) -> Metadata:
         return Jfxx(data)
     elif Mpf.has_signature(data):
         return Mpf(data)
-    elif XmpExtension.has_signature(data):
-        return XmpExtension(data)
+    elif XmpExtensionFragment.has_signature(data):
+        return XmpExtensionFragment(data)
     elif XmpStandard.has_signature(data):
         return XmpStandard(data)
     else:
