@@ -2,9 +2,10 @@ import argparse
 from pathlib import Path
 
 from src.objects import Jpeg
+from src.objects.metadata import XmpStandard
 
 
-def remove_motion_photo(image: Jpeg, dry: bool = False, verbose: bool = False) -> Path:
+def remove_motion_photo(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path:
     """
     Export a new image without the metadata associated with Motion Photo.
     If the initial image ends with .MP.jpg export as path/to/image.jpg.
@@ -16,32 +17,43 @@ def remove_motion_photo(image: Jpeg, dry: bool = False, verbose: bool = False) -
     Return the path of the output image.
     """
 
-    image.parse()
+    jpeg.parse()
 
-    if image.path.stem.endswith(".MP"):
-        stem = Path(image.path.stem).stem
-        output = image.path.with_stem(stem)
+    if jpeg.path.stem.endswith(".MP"):
+        stem = Path(jpeg.path.stem).stem
+        output = jpeg.path.with_stem(stem)
     else:
-        output = image.path.with_stem(image.path.stem + ".static")
+        output = jpeg.path.with_stem(jpeg.path.stem + ".static")
+
+    if verbose:
+        print("Input file: ", jpeg.path.absolute())
+        print("Input size: ", jpeg.size_data, "bytes")
 
     if not dry:
-        with output.open("wb") as fid:
-            for segment in image.segments:
-                # Remove APP1 http://adobe metadata
-                if (
-                    segment.name.startswith("APP1")
-                    and segment.data.startswith(b"http://")
-                    or segment.name.startswith("APP")
-                    and segment.data.startswith(b"MPF")
-                ):
-                    continue
-                # Write the segment
-                fid.write(segment.get_full_segment())
+        # Check if the MotionPhoto is in the file
+        if "MotionPhoto" in jpeg.xmp_data:
+            # Find the XMP Standard segment
+            xmp: XmpStandard | None = None
+            for segment in jpeg.image.segments:
+                if isinstance(segment.data, XmpStandard):
+                    xmp = segment.data
+                    break
+
+            # Remove the attributes associated with the MotionPhoto
+            xmp.remove_attribute(".//rdf:Description", "GCamera:MotionPhoto")
+            xmp.remove_attribute(".//rdf:Description", "GCamera:MotionPhotoVersion")
+            xmp.remove_attribute(".//rdf:Description", "GCamera:MotionPhotoPresentationTimestampUs")
+            # Remove the Container:Item for the MotionPhoto
+            xmp.remove_elements('.//rdf:li/Container:Item[@Item:Semantic="MotionPhoto"]/..')
+            # Remove the data of the MotionPhoto
+            jpeg.xmp_data.pop("MotionPhoto")
+
+        jpeg.save(output)
 
         # Show information about the input and output images
         if verbose:
-            print("Input file: ", image.path.absolute())
-            print("Input size: ", image.size_data, "bytes")
+            print("Input file: ", jpeg.path.absolute())
+            print("Input size: ", jpeg.size_data, "bytes")
             print("Output file:", output.absolute())
             print("Output size:", len(output.read_bytes()), "bytes")
 
@@ -78,33 +90,30 @@ if __name__ == "__main__":
             raise ValueError(f"Path {path} is unknown.")
 
     # Preload the files
-    images: list[Jpeg] = []
+    jpeg_files: list[Jpeg] = []
     for path in paths:
-        image = Jpeg(path)
-        if image.is_valid_jpeg():
-            images.append(image)
+        jpeg = Jpeg(path)
+        if jpeg.is_valid_jpeg():
+            jpeg_files.append(jpeg)
         else:
-            print(f"{image.path.absolute()} is skipped: not a valid JPEG.")
+            print(f"{jpeg.path.absolute()} is skipped: not a valid JPEG.")
 
     print(f"There are {len(paths)} JPEG files to parse.")
 
-    if len(images) <= 10:
-        for image in images:
-            print("  -", image.path.absolute())
+    if len(jpeg_files) <= 10:
+        for jpeg in jpeg_files:
+            print("  -", jpeg.path.absolute())
 
     # To show the current folder
     dir_current = ""
     # To show the progress
-    progress_total = len(images)
-    for progress, image in enumerate(images):
+    progress_total = len(jpeg_files)
+    for progress, jpeg in enumerate(jpeg_files, 1):
         # show current folder
-        if dir_current != image.path.parent:
-            dir_current = image.path.parent
+        if dir_current != jpeg.path.parent:
+            dir_current = jpeg.path.parent
             print(dir_current)
         # Show progress
         print(f"  {progress:>{len(str(progress_total))}}/{progress_total} ", end="")
-        if image.has_motion_photo():
-            output = remove_motion_photo(image, args.dry, args.verbose)
-            print(image.path.name, "->", output.name)
-        else:
-            print(image.path.name, " -> Skip")
+        output = remove_motion_photo(jpeg, args.dry, args.verbose)
+        print(jpeg.path.name, "->", output.name)

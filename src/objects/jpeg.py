@@ -4,7 +4,6 @@ from typing import Any
 from src.objects.metadata import Metadata, XmpStandard
 
 from .jpeg_image import JpegImage
-from .segment import Segment
 
 
 class Jpeg:
@@ -83,19 +82,3 @@ class Jpeg:
         with self.path.open("rb") as fid:
             header = fid.read(2)
         return header == b"\xff\xd8"
-
-    def has_motion_photo(self) -> bool:
-        """
-        Return True if the image has some metadata associated with Motion Photo.
-        """
-
-        self.parse()
-        segment: Segment
-        for segment in self.image.segments:
-            if not segment.name.startswith("APP"):
-                continue
-            if not segment.data.startswith(b"http://"):
-                continue
-            if b'GCamera:MotionPhoto="1"' in segment.data:
-                return True
-        return False
