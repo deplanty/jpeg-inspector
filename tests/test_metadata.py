@@ -4,7 +4,7 @@ exif = b"Exif\x00\x00II*"
 icc_profile = b"ICC_PROFILE\x00\x01\x01\x00\x00\x0cHLino"
 jfif = b"JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00"
 mpf = b"MPF\x00II*"
-xmp_extension_fragment = b"http://ns.adobe.com/xmp/extension/\x00090F7"
+xmp_extension_fragment = b"http://ns.adobe.com/xmp/extension/\x00090F77BD3AD151B65A612E8C8B8CC53E\x00\x01\x08\xc6\x00\x00\x00\x00"
 xmp_standard = b"http://ns.adobe.com/xap/1.0/\x00<x:xmpmeta xmlns:x='adobe:ns:meta/'></x:xmpmeta>"
 
 

@@ -6,7 +6,7 @@ from .xml_metadata import XmlMetadata
 
 class XmpExtensionFragment(Metadata):
     signature = b"http://ns.adobe.com/xmp/extension/\x00"
-    name = "XMP extension fragment"
+    name = "Extended XMP fragment"
 
     def __init__(self, data: bytes):
         super().__init__(data)
@@ -20,6 +20,12 @@ class XmpExtensionFragment(Metadata):
         size: bytes = struct.pack(">I", self.size_total)
         offset: bytes = struct.pack(">I", self.offset)
         return self.signature + self.guid + size + offset + self.payload
+
+    def to_str(self) -> str:
+        try:
+            return f"{self.name} {self.guid.decode('utf-8')}\n{self.payload.decode('utf-8')}"
+        except UnicodeDecodeError:
+            return self.to_raw_str()
 
 
 class XmpExtension(XmlMetadata):
