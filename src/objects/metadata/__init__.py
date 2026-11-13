@@ -4,7 +4,7 @@ from .jfif import Jfif
 from .jfxx import Jfxx
 from .metadata import Metadata
 from .mpf import Mpf
-from .xmp_extension import XmpExtensionFragment
+from .xmp_extension import XmpExtension, XmpExtensionFragment
 from .xmp_standard import XmpStandard
 
 

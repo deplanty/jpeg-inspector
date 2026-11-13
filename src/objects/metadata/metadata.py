@@ -3,7 +3,7 @@ class Metadata:
     name: str = ""
 
     def __init__(self, data: bytes):
-        self.payload = data[len(self.signature) :]
+        self.payload: bytes = data[len(self.signature) :]
 
     def __len__(self) -> int:
         return len(self.as_bytes())
