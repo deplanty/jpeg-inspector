@@ -1,4 +1,3 @@
-import io
 import sys
 
 from src.objects import Jpeg, Segment

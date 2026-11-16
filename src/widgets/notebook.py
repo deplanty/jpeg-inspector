@@ -50,16 +50,16 @@ class Notebook(HorizontalGroup):
         self.__display_format = display_format
         self.__show_data()
 
-    def add_element(self, parent_uid: str, uid: str, label:str, data: bytes | None = None) -> None:
+    def add_element(self, parent_uid: str, uid: str, label: str, data: bytes | None = None) -> None:
         """
-            To add an element to the main item, use parent_uid=root.
-            If data is None, the element is a node. Else the element is a leaf.
+        To add an element to the main item, use parent_uid=root.
+        If data is None, the element is a node. Else the element is a leaf.
 
-            Args:
-                parent_uid (str): the unique identifier of the parent node.
-                uid (str): the unique identifier of the node.
-                label (str): the displayed text.
-                data (bytes): the associated data of the leaf for this component.
+        Args:
+            parent_uid (str): the unique identifier of the parent node.
+            uid (str): the unique identifier of the node.
+            label (str): the displayed text.
+            data (bytes): the associated data of the leaf for this component.
         """
 
         node = self.__tree_nodes[parent_uid]
@@ -95,7 +95,6 @@ class Notebook(HorizontalGroup):
             case DisplayFormat.HEX:
                 text = data.to_hex()
             case _:
-                print("Other")
                 text = data.to_raw_str()
 
         self.__text_area.load_text(text)
