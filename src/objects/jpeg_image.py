@@ -28,5 +28,10 @@ class JpegImage:
 
         return cls(segments)
 
+    def sort_segments(self) -> None:
+        def sorting(segment: Segment) -> int:
+            return segment.order_priority
+        self.segments.sort(key=sorting)
+
     def as_bytes(self) -> bytes:
         return b"".join(segment.get_full_segment() for segment in self.segments)

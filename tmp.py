@@ -37,5 +37,6 @@ if xmp_extension.has_attribute(".//rdf:Description", "GCamera:HdrPlusMakernote")
     for fragment in fragments:
         jpeg.image.segments.append(Segment.from_metadata("APP1", fragment))
     xmp_standard.set_attribute(".//rdf:Description", "xmpNote:HasExtendedXMP", xmp_extension.guid)
+jpeg.image.sort_segments()
 jpeg.save("data-test/tmp.jpg")
 # print(xmp_extension.payload.decode())

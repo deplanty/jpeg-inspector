@@ -38,7 +38,6 @@ class Notebook(HorizontalGroup):
     # Events
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
-        print(event.node, "selected")
         if event.node not in self.__tree_data:
             return
         self.__tree_node_current = event.node

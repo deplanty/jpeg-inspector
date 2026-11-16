@@ -15,6 +15,8 @@ class Segment:
     marker: bytes
     # The data contained in the marker (without the 2 bytes for the length when present)
     data: Metadata
+    # The priority order in all the segments
+    order_priority: int
 
     def __len__(self) -> int:
         return len(self.get_full_segment())
@@ -22,7 +24,7 @@ class Segment:
     @classmethod
     def parse(cls, fid: BinaryIO) -> "Segment":
         marker = fid.read(2)
-        name, length = MARKERS[marker[1]]
+        name, length, order_priority = MARKERS[marker[1]]
 
         # Info about reading the markers: https://www.media.mit.edu/pia/Research/deepview/exif.html
         # The marker has no size (e.g. SOI and EOI) or a given size (e.g. DRI)
@@ -66,22 +68,22 @@ class Segment:
 
         # Determine the type of metadata contained in the data
         data_obj = metadata.get(fid.read(data_size))
-        segment = cls(name, marker, data_obj)
+        segment = cls(name, marker, data_obj, order_priority)
         return segment
 
     @classmethod
     def from_metadata(cls, name: str, metadata: Metadata) -> "Segment":
-        for marker, (marker_name, _) in MARKERS.items():
+        for marker, (marker_name, _, order) in MARKERS.items():
             if marker_name == name:
                 marker = b"\xff" + int.to_bytes(marker)
-                return cls(name, marker, metadata)
+                return cls(name, marker, metadata, order)
 
     @staticmethod
     def is_marker_valid(marker: int) -> bool:
         return marker in MARKERS
 
     def get_full_segment(self) -> bytes:
-        _, length = MARKERS[self.marker[1]]
+        _, length, _ = MARKERS[self.marker[1]]
         # No length is given
         if length >= 0 or length == -2:
             return self.marker + self.data.as_bytes()
@@ -98,28 +100,29 @@ class Segment:
 #      >=0 for known size.
 #      -1 for variable size where the length is after their marker.
 #      -2 for variable size where no length is given.
+#   2: order priority
 MARKERS: dict[int, tuple[str, int]] = {
-    0xD8: ("SOI", 0),
-    0xC0: ("SOF0", -1),
-    0xC2: ("SOF2", -1),
-    0xC4: ("DHT", -1),
-    0xDB: ("DQT", -1),
-    0xDD: ("DRI", 4),
-    0xDA: ("SOS", -2),
-    0xD0: ("RST0", 0),
-    0xD1: ("RST1", 0),
-    0xD2: ("RST2", 0),
-    0xD3: ("RST3", 0),
-    0xD4: ("RST4", 0),
-    0xD5: ("RST5", 0),
-    0xD6: ("RST6", 0),
-    0xD7: ("RST7", 0),
-    0xE0: ("APP0", -1),
-    0xE1: ("APP1", -1),
-    0xE2: ("APP2", -1),
-    0xE3: ("APP3", -1),
-    0xE4: ("APP4", -1),
-    0xE5: ("APP5", -1),
-    0xFE: ("COM", -1),
-    0xD9: ("EOI", 0),
+    0xD8: ("SOI", 0, 0),  # First segment
+    0xC0: ("SOF0", -1, 50),
+    0xC2: ("SOF2", -1, 50),
+    0xC4: ("DHT", -1, 50),
+    0xDB: ("DQT", -1, 50),
+    0xDD: ("DRI", 4, 50),
+    0xDA: ("SOS", -2, 50),
+    0xD0: ("RST0", 0, 40),
+    0xD1: ("RST1", 0, 41),
+    0xD2: ("RST2", 0, 42),
+    0xD3: ("RST3", 0, 43),
+    0xD4: ("RST4", 0, 44),
+    0xD5: ("RST5", 0, 45),
+    0xD6: ("RST6", 0, 46),
+    0xD7: ("RST7", 0, 47),
+    0xE0: ("APP0", -1, 10),
+    0xE1: ("APP1", -1, 11),
+    0xE2: ("APP2", -1, 12),
+    0xE3: ("APP3", -1, 13),
+    0xE4: ("APP4", -1, 14),
+    0xE5: ("APP5", -1, 15),
+    0xFE: ("COM", -1, 20),
+    0xD9: ("EOI", 0, 100),  # Last segment
 }
