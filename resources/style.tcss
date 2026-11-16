@@ -20,5 +20,11 @@ Notebook {
 
 Tree {
     width: auto;
-    min-width: $tab-width
+    min-width: $tab-width;
+}
+
+
+Tree:blur > .tree--cursor, Tree:focus > .tree--cursor {
+    background: $primary;
+    text-style: bold;
 }
