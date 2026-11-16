@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import BinaryIO
 
 from src.objects import metadata
+from src.objects.metadata import Metadata
 from src.utils.exceptions import SegmentMarkerError
 
 
@@ -13,7 +14,7 @@ class Segment:
     # The marker's bytes (e.g. 0xFFD8)
     marker: bytes
     # The data contained in the marker (without the 2 bytes for the length when present)
-    data: metadata.Metadata
+    data: Metadata
 
     def __len__(self) -> int:
         return len(self.get_full_segment())
@@ -67,6 +68,13 @@ class Segment:
         data_obj = metadata.get(fid.read(data_size))
         segment = cls(name, marker, data_obj)
         return segment
+
+    @classmethod
+    def from_metadata(cls, name: str, metadata: Metadata) -> "Segment":
+        for marker, (marker_name, _) in MARKERS.items():
+            if marker_name == name:
+                marker = b"\xff" + int.to_bytes(marker)
+                return cls(name, marker, metadata)
 
     @staticmethod
     def is_marker_valid(marker: int) -> bool:

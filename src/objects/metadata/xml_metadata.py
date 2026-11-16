@@ -27,6 +27,14 @@ class XmlMetadata(Metadata):
             # Register the namespaces to write the correct name when calling ElementTree.tostring
             ElementTree.register_namespace(prefix, uri)
 
+    def has_attribute(self, xpath: str, attribute: str) -> bool:
+        element = self.tree.find(xpath, self.namespaces)
+        if element is None:
+            return False
+
+        attribute = self.with_namespace(attribute)
+        return attribute in element.attrib
+
     def get_attribute(self, xpath: str, attribute: str) -> None | Any:
         element = self.tree.find(xpath, self.namespaces)
         if element is None:
