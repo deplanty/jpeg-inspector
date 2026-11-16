@@ -97,3 +97,4 @@ class Notebook(HorizontalGroup):
                 text = data.to_raw_str()
 
         self.__text_area.load_text(text)
+        self.__text_area.refresh()
