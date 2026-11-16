@@ -76,6 +76,6 @@ class XmlMetadata(Metadata):
         # If a namespace is used for the attribute
         if ":" in item:
             space, key = item.split(":")
-            namespace = self.namespaces[space]
+            namespace = self.namespaces.get(space, space)
             item = f"{{{namespace}}}{key}"
         return item

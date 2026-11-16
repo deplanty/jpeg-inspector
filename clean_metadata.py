@@ -5,9 +5,11 @@ from src.objects import Jpeg, Segment
 from src.objects.metadata import XmpExtension, XmpExtensionFragment, XmpStandard
 
 
-def remove_motion_photo(jpeg: Jpeg):
+def remove_motion_photo(jpeg: Jpeg, verbose: bool):
     # Check if the MotionPhoto is in the file
     if "MotionPhoto" not in jpeg.xmp_data:
+        if verbose:
+            print("MotionPhoto not found in Standard XMP.")
         return
 
     # Find the XMP Standard segment
@@ -16,6 +18,11 @@ def remove_motion_photo(jpeg: Jpeg):
         if isinstance(segment.data, XmpStandard):
             xmp = segment.data
             break
+
+    if xmp is None:
+        if verbose:
+            print("Standard XMP not found.")
+        return
 
     # Remove the attributes associated with the MotionPhoto
     xmp.remove_attribute(".//rdf:Description", "GCamera:MotionPhoto")
@@ -27,7 +34,7 @@ def remove_motion_photo(jpeg: Jpeg):
     jpeg.xmp_data.pop("MotionPhoto")
 
 
-def remove_hdr_plus_makernote(jpeg: Jpeg):
+def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool):
     # Find the Standard XMP Metadata
     xmp_standard: XmpStandard | None = None
     for segment in jpeg.image.segments:
@@ -35,6 +42,8 @@ def remove_hdr_plus_makernote(jpeg: Jpeg):
             xmp_standard = segment.data
             break
     if xmp_standard is None:
+        if verbose:
+            print("Standard XMP not found.")
         return
 
     # Check if the Standard XMP mentions Extended XMP
@@ -42,6 +51,8 @@ def remove_hdr_plus_makernote(jpeg: Jpeg):
         ".//rdf:Description", "xmpNote:HasExtendedXMP"
     )
     if not has_xmp_extension:
+        if verbose:
+            print("Extended XMP not found.")
         return
 
     # Fetch all the Extended XMP fragments
@@ -57,6 +68,8 @@ def remove_hdr_plus_makernote(jpeg: Jpeg):
 
     # Check if the Extended XMP has HdrPlusMakernote
     if not xmp_extension.has_attribute(".//rdf:Description", "GCamera:HdrPlusMakernote"):
+        if verbose:
+            print("HdrPlusMakernote not found in Extended XMP.")
         return
 
     # Remove the HdrPlusMakernote attribute
@@ -92,15 +105,15 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path:
         stem = Path(jpeg.path.stem).stem
         output = jpeg.path.with_stem(stem)
     else:
-        output = jpeg.path.with_stem(jpeg.path.stem + ".static")
+        output = jpeg.path.with_stem(jpeg.path.stem + ".clean")
 
     if verbose:
         print("Input file: ", jpeg.path.absolute())
         print("Input size: ", jpeg.size_data, "bytes")
 
     if not dry:
-        remove_motion_photo(jpeg)
-        remove_hdr_plus_makernote(jpeg)
+        remove_motion_photo(jpeg, verbose)
+        remove_hdr_plus_makernote(jpeg, verbose)
         jpeg.image.sort_segments()
         jpeg.save(output)
 
@@ -155,6 +168,7 @@ if __name__ == "__main__":
     if len(jpeg_files) <= 10:
         for jpeg in jpeg_files:
             print("  -", jpeg.path.absolute())
+    print()
 
     # To show the current folder
     dir_current = ""
