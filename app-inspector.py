@@ -76,22 +76,26 @@ class JpegInspector(App):
             self.notify("The file is not a valid JPEG", severity="error")
             return
         jpeg.parse()
-        # Populate the notebook with a tab with the main image
+        # Clean th notebook
         notebook.clear()
-        for segment in jpeg.image.segments:
-            notebook.add_tab(segment.name, segment.data)
+        # Populate the notebook with a tab with the main image
+        notebook.add_element("root", "main-image", "Main image")
+        for i, segment in enumerate(jpeg.image.segments):
+            notebook.add_element("main-image", f"main-image-{i:02d}", segment.name, segment.data)
             notebook.refresh()
         # Add the tabs for the xmp data
-        for xmp_data in jpeg.xmp_data.values():
+        notebook.add_element("root", "xmp", "XMP data")
+        for i, xmp_data in enumerate(jpeg.xmp_data.values()):
+            uid = f"xmp-{i:02d}"
             if isinstance(xmp_data, JpegImage):
-                for segment in xmp_data.segments:
-                    notebook.add_tab(segment.name, segment.data)
-                    notebook.refresh()
+                notebook.add_element("xmp", uid, "Image")
+                for j, segment in enumerate(xmp_data.segments):
+                    notebook.add_element(uid, f"{uid}-{j:02d}", segment.name, segment.data)
             else:
-                notebook.add_tab("XMP", xmp_data)
+                notebook.add_element("xmp", uid, "Other", xmp_data)
         # Add the extra data
         if jpeg.extra_data:
-            notebook.add_tab("Extra", jpeg.extra_data)
+            notebook.add_element("root", "extra-data", "Extra", jpeg.extra_data)
 
 
 if __name__ == "__main__":

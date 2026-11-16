@@ -1,71 +1,91 @@
 from typing import TYPE_CHECKING
 
 from textual.app import ComposeResult
-from textual.containers import HorizontalGroup, VerticalScroll
-from textual.widgets import Button, TextArea
+from textual.containers import HorizontalGroup
+from textual.widgets import TextArea, Tree
 
 from src.utils.enums import DisplayFormat
 
 if TYPE_CHECKING:
+    from textual.widgets.tree import TreeNode
+
     from objects.metadata import Metadata
 
 
 class Notebook(HorizontalGroup):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # The data associated with each tab
-        self.__tab_data: dict[Button, Metadata] = {}
-        # The text area showing the data
-        self.__text_area: TextArea
         # How the data is shown (raw, plain or hex)
         self.__display_format: DisplayFormat = DisplayFormat.RAW
-        # If the notebook is ready to show data
-        self.__ready: bool = False
+        # The nodes of the tree identified by a unique identifier
+        self.__tree_nodes: dict[str, TreeNode] = {}
+        # The data associated with each leaf
+        self.__tree_data: dict[TreeNode, Metadata] = {}
+        # The current node selected
+        self.__tree_node_current: TreeNode | None = None
+        # The text area showing the data
+        self.__text_area: TextArea
+
+    def compose(self) -> ComposeResult:
+        self.__tree = Tree("Jpeg", classes="notebook-tab")
+        self.__tree.root.expand()
+        self.__tree_nodes["root"] = self.__tree.root
+        yield self.__tree
+
+        self.__text_area = TextArea(read_only=True, show_cursor=False, id="text-data")
+        yield self.__text_area
+
+    # Events
+
+    def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:
+        print(event.node, "selected")
+        if event.node not in self.__tree_data:
+            return
+        self.__tree_node_current = event.node
+        self.__show_data()
+
+    # Public methods
 
     def set_display_format(self, display_format: DisplayFormat) -> None:
         self.__display_format = display_format
         self.__show_data()
 
-    def compose(self) -> ComposeResult:
-        yield VerticalScroll(classes="notebook-tab")
-        self.__text_area = TextArea(read_only=True, show_cursor=False, id="text-data")
-        yield self.__text_area
+    def add_element(self, parent_uid: str, uid: str, label:str, data: bytes | None = None) -> None:
+        """
+            To add an element to the main item, use parent_uid=root.
+            If data is None, the element is a node. Else the element is a leaf.
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        # if event.button.has_class("notebook-tab"):
-        # Manage tabs style
-        for button in self.query("Button.notebook-tab"):
-            if button.has_class("selected"):
-                button.remove_class("selected")
-        event.button.add_class("selected")
+            Args:
+                parent_uid (str): the unique identifier of the parent node.
+                uid (str): the unique identifier of the node.
+                label (str): the displayed text.
+                data (bytes): the associated data of the leaf for this component.
+        """
 
-        # Show tab data
-        self.__show_data(event.button)
-
-    def add_tab(self, name: str, data: bytes) -> None:
-        button = Button(name, classes="notebook-tab", compact=True)
-        self.query_one("VerticalScroll").mount(button)
-        self.__tab_data[button] = data
-        self.__ready = True
-
-        if len(self.query("Button.notebook-tab")) == 1:
-            # Show tab data
-            button.add_class("selected")
-            self.__show_data(button)
+        node = self.__tree_nodes[parent_uid]
+        if data is None:
+            self.__tree_nodes[uid] = node.add(label, expand=True)
+        else:
+            leaf = node.add_leaf(label)
+            self.__tree_nodes[uid] = leaf
+            self.__tree_data[leaf] = data
 
     def clear(self) -> None:
-        for button in self.query("Button.notebook-tab"):
-            button.remove()
-        self.__tab_data.clear()
+        self.__tree.clear()
+        self.__tree_nodes.clear()
+        self.__tree_data.clear()
+        self.__tree_node_current = None
+        self.__text_area.clear()
 
-    def __show_data(self, button: Button | None = None) -> None:
-        if not self.__ready:
+        self.__tree_nodes["root"] = self.__tree.root
+
+    # Private methods
+
+    def __show_data(self) -> None:
+        if self.__tree_node_current is None:
             return
 
-        if button is None:
-            button = self.query_one("Button.notebook-tab.selected", Button)
-
-        data: Metadata = self.__tab_data[button]
+        data: Metadata = self.__tree_data[self.__tree_node_current]
         text: str
         match self.__display_format:
             case DisplayFormat.RAW:

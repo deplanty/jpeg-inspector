@@ -18,16 +18,7 @@ Notebook {
     min-height: 0;
 }
 
-VerticalScroll.notebook-tab {
+Tree {
     width: auto;
-    min-width: $tab-width;
-}
-
-Button.notebook-tab {
-    min-width: $tab-width;
-    background: initial;
-}
-
-Button.notebook-tab.selected {
-    background: $primary;
+    min-width: $tab-width
 }
