@@ -31,6 +31,7 @@ class JpegImage:
     def sort_segments(self) -> None:
         def sorting(segment: Segment) -> int:
             return segment.order_priority
+
         self.segments.sort(key=sorting)
 
     def as_bytes(self) -> bytes:
