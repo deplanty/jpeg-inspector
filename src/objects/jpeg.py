@@ -19,7 +19,21 @@ class Jpeg:
 
         self.__parsed = False
 
+    def __len__(self) -> int:
+        size: int = 0
+        # Size of the main image
+        size += len(self.image)
+        # Size of all the extra data found in the XMP Standard segment
+        for xmp_data in self.xmp_data.values():
+            if isinstance(xmp_data, (Metadata, JpegImage)):
+                size += len(xmp_data)
+        # Size of the additional data found
+        size += len(self.extra_data)
+
+        return size
+
     # Public methods
+
     def parse(self, force=False):
         """
         Parse the file to load its data.
@@ -70,8 +84,6 @@ class Jpeg:
                     fid.write(xmp_data.as_bytes())
             # Write the additional data found
             fid.write(self.extra_data.as_bytes())
-
-    # Tools
 
     def is_valid_jpeg(self) -> bool:
         """

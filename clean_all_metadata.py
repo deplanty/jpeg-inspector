@@ -21,7 +21,7 @@ def remove_metadata(image: Jpeg):
             fid.write(segment.get_full_segment())
 
     print("Inout file: ", image.path.absolute())
-    print("Input size: ", image.size_data, "bytes")
+    print("Input size: ", len(image), "bytes")
     print("Output file:", output.absolute())
     print("Output size:", len(output.read_bytes()), "bytes")
 

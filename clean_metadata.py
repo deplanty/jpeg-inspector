@@ -118,7 +118,7 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path |
 
     if verbose:
         print("Input file: ", jpeg.path.absolute())
-        print("Input size: ", jpeg.size_data, "bytes")
+        print("Input size: ", len(jpeg), "bytes")
 
     # Run the pipeline to remove the desired metadata
     pipeline: list[Callable] = [remove_motion_photo, remove_hdr_plus_makernote]
@@ -133,7 +133,7 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path |
 
     if dry:
         if verbose:
-            print("Output size:", jpeg.size_data, "bytes")
+            print("Output size:", len(jpeg), "bytes")
         return output.absolute()
 
     # If a change has occured during the pipeline
@@ -146,6 +146,7 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path |
 
     # Show information about the output images
     if verbose:
+        print("Output size:", len(jpeg), "bytes")
         print("Output size:", len(output.read_bytes()), "bytes")
 
     return output.absolute()
