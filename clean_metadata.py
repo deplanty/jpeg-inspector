@@ -128,6 +128,12 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path |
         changed.append(change)
     jpeg.image.sort_segments()
 
+    # If a change has occured during the pipeline
+    if not any(changed):
+        if verbose:
+            print("No change: skip")
+        return None
+
     if verbose:
         print("Output file:", output.absolute())
 
@@ -135,11 +141,6 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path |
         if verbose:
             print("Output size:", len(jpeg), "bytes")
         return output.absolute()
-
-    # If a change has occured during the pipeline
-    if not any(changed):
-        print("No changes: skip")
-        return None
 
     # Write the output jpeg file
     jpeg.save(output)
@@ -165,7 +166,11 @@ if __name__ == "__main__":
         help="Run the process without doing anything.",
     )
     parser.add_argument(
-        "-v", "--verbose", action="store_true", default=False, help="Show information."
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=False,
+        help="Show more information about what's happening.",
     )
 
     args: argparse.Namespace = parser.parse_args()
@@ -205,7 +210,7 @@ if __name__ == "__main__":
         # show current folder
         if dir_current != jpeg.path.parent:
             dir_current = jpeg.path.parent
-            print(dir_current)
+            print(f"\nFolder: {dir_current}")
         # Show progress
         if args.verbose:
             print(f"  {progress:>{len(str(progress_total))}}/{progress_total}")
@@ -214,6 +219,6 @@ if __name__ == "__main__":
             print(f"  {progress:>{len(str(progress_total))}}/{progress_total} ", end="")
             output = process_jpeg(jpeg, args.dry, args.verbose)
             if output is None:
-                print(jpeg.path.name, "no change")
+                print(jpeg.path.name, "-> no change")
             else:
                 print(jpeg.path.name, "->", output.name)

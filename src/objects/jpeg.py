@@ -13,10 +13,6 @@ class Jpeg:
         self.xmp_data: dict[str, Any] = {}
         self.extra_data: Metadata
 
-        with self.path.open("r") as fid:
-            fid.seek(0, 2)  # End of file
-            self.size_data = fid.tell()
-
         self.__parsed = False
 
     def __len__(self) -> int:
