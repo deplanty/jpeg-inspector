@@ -1,16 +1,19 @@
 import argparse
+from collections.abc import Callable
 from pathlib import Path
 
 from src.objects import Jpeg, Segment
 from src.objects.metadata import XmpExtension, XmpExtensionFragment, XmpStandard
 
 
-def remove_motion_photo(jpeg: Jpeg, verbose: bool):
+def remove_motion_photo(jpeg: Jpeg, verbose: bool) -> bool:
+    """Return True is a change has been done"""
+
     # Check if the MotionPhoto is in the file
     if "MotionPhoto" not in jpeg.xmp_data:
         if verbose:
             print("MotionPhoto not found in Standard XMP.")
-        return
+        return False
 
     # Find the XMP Standard segment
     xmp: XmpStandard | None = None
@@ -22,7 +25,7 @@ def remove_motion_photo(jpeg: Jpeg, verbose: bool):
     if xmp is None:
         if verbose:
             print("Standard XMP not found.")
-        return
+        return False
 
     # Remove the attributes associated with the MotionPhoto
     xmp.remove_attribute(".//rdf:Description", "GCamera:MotionPhoto")
@@ -33,8 +36,12 @@ def remove_motion_photo(jpeg: Jpeg, verbose: bool):
     # Remove the data of the MotionPhoto
     jpeg.xmp_data.pop("MotionPhoto")
 
+    return True
 
-def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool):
+
+def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool) -> bool:
+    """Return True is a change has been done"""
+
     # Find the Standard XMP Metadata
     xmp_standard: XmpStandard | None = None
     for segment in jpeg.image.segments:
@@ -44,7 +51,7 @@ def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool):
     if xmp_standard is None:
         if verbose:
             print("Standard XMP not found.")
-        return
+        return False
 
     # Check if the Standard XMP mentions Extended XMP
     has_xmp_extension: bool = xmp_standard.has_attribute(
@@ -53,7 +60,7 @@ def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool):
     if not has_xmp_extension:
         if verbose:
             print("Extended XMP not found.")
-        return
+        return False
 
     # Fetch all the Extended XMP fragments
     xmp_extension_segments: list[Segment] = []
@@ -70,7 +77,7 @@ def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool):
     if not xmp_extension.has_attribute(".//rdf:Description", "GCamera:HdrPlusMakernote"):
         if verbose:
             print("HdrPlusMakernote not found in Extended XMP.")
-        return
+        return False
 
     # Remove the HdrPlusMakernote attribute
     xmp_extension.remove_attribute(".//rdf:Description", "GCamera:HdrPlusMakernote")
@@ -86,8 +93,10 @@ def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool):
     # Update the Standard XMP with the new GUID of the Extended XMP
     xmp_standard.set_attribute(".//rdf:Description", "xmpNote:HasExtendedXMP", xmp_extension.guid)
 
+    return True
 
-def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path:
+
+def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path | None:
     """
     Export a new image without the metadata associated with Motion Photo.
     If the initial image ends with .MP.jpg export as path/to/image.jpg.
@@ -111,16 +120,33 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path:
         print("Input file: ", jpeg.path.absolute())
         print("Input size: ", jpeg.size_data, "bytes")
 
-    if not dry:
-        remove_motion_photo(jpeg, verbose)
-        remove_hdr_plus_makernote(jpeg, verbose)
-        jpeg.image.sort_segments()
-        jpeg.save(output)
+    # Run the pipeline to remove the desired metadata
+    pipeline: list[Callable] = [remove_motion_photo, remove_hdr_plus_makernote]
+    changed: list[bool] = []
+    for func in pipeline:
+        change = func(jpeg, verbose)
+        changed.append(change)
+    jpeg.image.sort_segments()
 
-        # Show information about the input and output images
+    if verbose:
+        print("Output file:", output.absolute())
+
+    if dry:
         if verbose:
-            print("Output file:", output.absolute())
-            print("Output size:", len(output.read_bytes()), "bytes")
+            print("Output size:", jpeg.size_data, "bytes")
+        return output.absolute()
+
+    # If a change has occured during the pipeline
+    if not any(changed):
+        print("No changes: skip")
+        return None
+
+    # Write the output jpeg file
+    jpeg.save(output)
+
+    # Show information about the output images
+    if verbose:
+        print("Output size:", len(output.read_bytes()), "bytes")
 
     return output.absolute()
 
@@ -180,6 +206,13 @@ if __name__ == "__main__":
             dir_current = jpeg.path.parent
             print(dir_current)
         # Show progress
-        print(f"  {progress:>{len(str(progress_total))}}/{progress_total} ", end="")
-        output = process_jpeg(jpeg, args.dry, args.verbose)
-        print(jpeg.path.name, "->", output.name)
+        if args.verbose:
+            print(f"  {progress:>{len(str(progress_total))}}/{progress_total}")
+            output = process_jpeg(jpeg, args.dry, args.verbose)
+        else:
+            print(f"  {progress:>{len(str(progress_total))}}/{progress_total} ", end="")
+            output = process_jpeg(jpeg, args.dry, args.verbose)
+            if output is None:
+                print(jpeg.path.name, "no change")
+            else:
+                print(jpeg.path.name, "->", output.name)
