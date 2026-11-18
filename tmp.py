@@ -7,8 +7,6 @@ filename = "data-test/mountain.MP.jpg"
 jpeg = Jpeg(filename)
 jpeg.parse()
 
-sys.exit()
-
 # Find the XMP Standard Metadata
 xmp_standard: XmpStandard | None = None
 for segment in jpeg.image.segments:

@@ -3,7 +3,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.objects import Jpeg, Segment
-from src.objects.metadata import XmpExtension, XmpExtensionFragment, XmpStandard
+from src.objects.metadata import Metadata, XmpExtension, XmpExtensionFragment, XmpStandard
 
 SYM_OK: str = "\033[92m✓\033[0m"
 SYM_NOT_OK: str = "\033[91m✗\033[0m"
@@ -142,6 +142,22 @@ def remove_hdr_makernote(jpeg: Jpeg, verbose: bool) -> bool:
     return True
 
 
+def remove_extra_data(jpeg: Jpeg, verbose: bool) -> bool:
+    """
+    Remove:
+        - jpeg.extra_data
+    Return True is a change has been done
+    """
+
+    if jpeg.extra_data.as_bytes() == b"":
+        print_verbose(f"{SYM_NOT_OK} Extra data not found.", verbose)
+        return False
+    else:
+        jpeg.extra_data = Metadata(b"")
+        print_verbose(f"{SYM_OK} Extra data removed.", verbose)
+        return True
+
+
 def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path | None:
     """
     Export a new image without the metadata associated with Motion Photo.
@@ -167,7 +183,7 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path |
         print("Input size: ", len(jpeg), "bytes")
 
     # Run the pipeline to remove the desired metadata
-    pipeline: list[Callable] = [remove_motion_photo, remove_hdr_makernote]
+    pipeline: list[Callable] = [remove_motion_photo, remove_hdr_makernote, remove_extra_data]
     changed: list[bool] = []
     for func in pipeline:
         change = func(jpeg, verbose)

@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any
 
-from src.objects.metadata import Metadata, XmpStandard
+from src.objects.metadata import Metadata, XmpStandard, XmpStandardItem
 
 from .jpeg_image import JpegImage
 
@@ -50,11 +50,27 @@ class Jpeg:
                     xmp = segment.data
                     break
 
+            # The index of the first byte after the main image
+            extra_data_start: int = fid.tell()
+
             if xmp:
+                # The Standard XMP associated data are stored at the end of the file. The data are
+                # read backward.
+                index_from_end: int = fid.seek(0, 2)
+                xmp_item: XmpStandardItem
+                for xmp_item in reversed(xmp.items):
+                    index_from_end -= xmp_item.length
+                    if xmp_item.length > 0:
+                        xmp_item.offset = index_from_end
+
+                # The extra data is between the main image and the Standard XMP data.
+                extra_data_stop: int = index_from_end
+
                 for xmp_item in xmp.items:
                     # Skip XMP Item without length
                     if xmp_item.length == 0:
                         continue
+                    fid.seek(xmp_item.offset)
                     # Parse the Jpeg images (gain map for ultra HDR, ...)
                     if xmp_item.mime == "image/jpeg":
                         image = JpegImage.parse(fid)
@@ -65,9 +81,12 @@ class Jpeg:
 
                     # Skip the padding after the data
                     fid.read(xmp_item.padding)
+            else:
+                extra_data_stop: int = fid.seek(0, 2)
 
-            # Some Jpeg files have more data after EOI
-            self.extra_data = Metadata(fid.read())
+            # Some Jpeg files have more data after EOI and before the Standard XMP data
+            fid.seek(extra_data_start)
+            self.extra_data = Metadata(fid.read(extra_data_stop - extra_data_start))
 
     def save(self, filename: str | Path):
         output: Path = Path(filename)

@@ -11,6 +11,9 @@ class XmpStandardItem:
     length: int = 0
     padding: int = 0
 
+    # The starting offset of the data in the file.
+    offset: int = 0
+
     @classmethod
     def from_element(cls, element: ElementTree.Element, namespaces) -> "XmpStandardItem":
         def get(key: str) -> str:

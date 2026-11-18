@@ -7,6 +7,7 @@ from .mpf import Mpf
 from .xmp_extension import XmpExtension as XmpExtension
 from .xmp_extension import XmpExtensionFragment
 from .xmp_standard import XmpStandard
+from .xmp_standard import XmpStandardItem as XmpStandardItem
 
 
 def get(data: bytes) -> Metadata:
