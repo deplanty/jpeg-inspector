@@ -8,7 +8,7 @@ from .xml_metadata import XmlMetadata
 class XmpStandardItem:
     semantic: str = ""
     mime: str = ""
-    length: int = -1
+    length: int = 0
     padding: int = 0
 
     @classmethod

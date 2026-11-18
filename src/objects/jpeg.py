@@ -52,8 +52,8 @@ class Jpeg:
 
             if xmp:
                 for xmp_item in xmp.items:
-                    # Skip XMP Item with a negative length because it's the main image
-                    if xmp_item.length == -1:
+                    # Skip XMP Item without length
+                    if xmp_item.length == 0:
                         continue
                     # Parse the Jpeg images (gain map for ultra HDR, ...)
                     if xmp_item.mime == "image/jpeg":

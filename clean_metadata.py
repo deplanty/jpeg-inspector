@@ -5,14 +5,27 @@ from pathlib import Path
 from src.objects import Jpeg, Segment
 from src.objects.metadata import XmpExtension, XmpExtensionFragment, XmpStandard
 
+SYM_OK: str = "\033[92m✓\033[0m"
+SYM_NOT_OK: str = "\033[91m✗\033[0m"
+
+
+def print_verbose(text: str, verbose: bool, **kwargs) -> None:
+    if verbose:
+        print(text, **kwargs)
+
 
 def remove_motion_photo(jpeg: Jpeg, verbose: bool) -> bool:
-    """Return True is a change has been done"""
+    """
+    Remove:
+        - GCamera:MotionPhoto
+        - GCamera:MotionPhotoVersion
+        - GCamera:MotionPhotoPresentationTimestampUs
+    Return True is a change has been done
+    """
 
     # Check if the MotionPhoto is in the file
     if "MotionPhoto" not in jpeg.xmp_data:
-        if verbose:
-            print("MotionPhoto not found in Standard XMP.")
+        print_verbose(f"{SYM_NOT_OK} MotionPhoto not found in Standard XMP.", verbose)
         return False
 
     # Find the XMP Standard segment
@@ -23,24 +36,45 @@ def remove_motion_photo(jpeg: Jpeg, verbose: bool) -> bool:
             break
 
     if xmp is None:
-        if verbose:
-            print("Standard XMP not found.")
+        print_verbose(f"{SYM_NOT_OK} Standard XMP not found.", verbose)
         return False
 
-    # Remove the attributes associated with the MotionPhoto
-    xmp.remove_attribute(".//rdf:Description", "GCamera:MotionPhoto")
-    xmp.remove_attribute(".//rdf:Description", "GCamera:MotionPhotoVersion")
-    xmp.remove_attribute(".//rdf:Description", "GCamera:MotionPhotoPresentationTimestampUs")
-    # Remove the Container:Item for the MotionPhoto
-    xmp.remove_elements('.//rdf:li/Container:Item[@Item:Semantic="MotionPhoto"]/..')
-    # Remove the data of the MotionPhoto
-    jpeg.xmp_data.pop("MotionPhoto")
+    # Try to remove the attributes associated with the MotionPhoto
+    to_remove: list[tuple[str, str]] = [
+        (".//rdf:Description", "GCamera:MotionPhoto"),
+        (".//rdf:Description", "GCamera:MotionPhotoVersion"),
+        (".//rdf:Description", "GCamera:MotionPhotoPresentationTimestampUs"),
+    ]
+    for xpath, attribute in to_remove:
+        # Check if the Standard XMP has the attribute and remove it
+        if xmp.has_attribute(xpath, attribute):
+            xmp.remove_attribute(xpath, attribute)
+            print_verbose(f"{SYM_OK} {attribute} removed from Standard XMP.", verbose)
+        else:
+            print_verbose(f"{SYM_NOT_OK} {attribute} not found in Standard XMP.", verbose)
+
+    if xmp.has_element('.//rdf:li/Container:Item[@Item:Semantic="MotionPhoto"]/..'):
+        # Remove the rdf:li with Container:Item for the MotionPhoto
+        xmp.remove_elements('.//rdf:li/Container:Item[@Item:Semantic="MotionPhoto"]/..')
+        # Remove the data of the MotionPhoto
+        jpeg.xmp_data.pop("MotionPhoto")
+        print_verbose(f"{SYM_OK} MotionPhoto removed from Standard XMP", verbose)
+    else:
+        print_verbose(
+            f"{SYM_NOT_OK} Container:Item for the MotionPhoto not found in Standard XMP", verbose
+        )
 
     return True
 
 
-def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool) -> bool:
-    """Return True is a change has been done"""
+def remove_hdr_makernote(jpeg: Jpeg, verbose: bool) -> bool:
+    """
+    Remove:
+        - GCamera:HdrPlusMakernote from recent HDR+ format
+        - GCamera:hdrp_makernote from old HDR+ format
+        - GCamera:shot_log_data linked with hdrp_makernote
+    Return True is a change has been done
+    """
 
     # Find the Standard XMP Metadata
     xmp_standard: XmpStandard | None = None
@@ -50,7 +84,7 @@ def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool) -> bool:
             break
     if xmp_standard is None:
         if verbose:
-            print("Standard XMP not found.")
+            print(f"{SYM_NOT_OK} Standard XMP not found.")
         return False
 
     # Check if the Standard XMP mentions Extended XMP
@@ -59,7 +93,7 @@ def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool) -> bool:
     )
     if not has_xmp_extension:
         if verbose:
-            print("Extended XMP not found.")
+            print(f"{SYM_NOT_OK} Extended XMP not found.")
         return False
 
     # Fetch all the Extended XMP fragments
@@ -73,14 +107,26 @@ def remove_hdr_plus_makernote(jpeg: Jpeg, verbose: bool) -> bool:
         [segment.data for segment in xmp_extension_segments]
     )
 
-    # Check if the Extended XMP has HdrPlusMakernote
-    if not xmp_extension.has_attribute(".//rdf:Description", "GCamera:HdrPlusMakernote"):
-        if verbose:
-            print("HdrPlusMakernote not found in Extended XMP.")
-        return False
+    # Try to remove several attributes
+    change: bool = False
+    to_remove: list[tuple[str, str]] = [
+        (".//rdf:Description", "GCamera:HdrPlusMakernote"),
+        (".//rdf:Description", "GCamera:hdrp_makernote"),
+        (".//rdf:Description", "GCamera:shot_log_data"),
+    ]
+    for xpath, attribute in to_remove:
+        # Check if the Extended XMP has the attribute and remove it
+        if xmp_extension.has_attribute(xpath, attribute):
+            xmp_extension.remove_attribute(xpath, attribute)
+            change = True
+            if verbose:
+                print(f"{SYM_OK} {attribute} removed from Extended XMP.")
+        else:
+            if verbose:
+                print(f"{SYM_NOT_OK} {attribute} not found in Extended XMP.")
 
-    # Remove the HdrPlusMakernote attribute
-    xmp_extension.remove_attribute(".//rdf:Description", "GCamera:HdrPlusMakernote")
+    if not change:
+        return False
 
     # Remove the old Extended XMP fragments
     for segment in xmp_extension_segments:
@@ -121,7 +167,7 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path |
         print("Input size: ", len(jpeg), "bytes")
 
     # Run the pipeline to remove the desired metadata
-    pipeline: list[Callable] = [remove_motion_photo, remove_hdr_plus_makernote]
+    pipeline: list[Callable] = [remove_motion_photo, remove_hdr_makernote]
     changed: list[bool] = []
     for func in pipeline:
         change = func(jpeg, verbose)
@@ -148,7 +194,6 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path |
     # Show information about the output images
     if verbose:
         print("Output size:", len(jpeg), "bytes")
-        print("Output size:", len(output.read_bytes()), "bytes")
 
     return output.absolute()
 

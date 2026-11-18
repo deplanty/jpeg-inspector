@@ -61,6 +61,10 @@ class XmlMetadata(Metadata):
         element.attrib.pop(attribute)
         self._update_payload()
 
+    def has_element(self, xpath: str) -> bool:
+        elements = self.tree.findall(xpath, self.namespaces)
+        return len(elements) != 0
+
     def remove_elements(self, xpath: str):
         elements = self.tree.findall(xpath, self.namespaces)
         if not elements:
