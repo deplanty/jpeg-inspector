@@ -70,8 +70,6 @@ class ExtendedXmp(XmlMetadata):
         size_total = len(self.payload)
         for index in range(size_total // ExtendedXmpFragment.max_size + 1):
             offset = index * ExtendedXmpFragment.max_size
-            fragment = ExtendedXmpFragment.from_payload(
-                self.guid, size_total, offset, self.payload
-            )
+            fragment = ExtendedXmpFragment.from_payload(self.guid, size_total, offset, self.payload)
             fragments.append(fragment)
         return fragments

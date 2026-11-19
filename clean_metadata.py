@@ -3,7 +3,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.objects import Jpeg, Segment
-from src.objects.metadata import Metadata, ExtendedXmp, ExtendedXmpFragment, StandardXmp
+from src.objects.metadata import ExtendedXmp, ExtendedXmpFragment, Metadata, StandardXmp
 
 SYM_OK: str = "\033[92m✓\033[0m"
 SYM_NOT_OK: str = "\033[91m✗\033[0m"
