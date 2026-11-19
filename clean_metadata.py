@@ -7,6 +7,7 @@ from src.objects.metadata import ExtendedXmp, ExtendedXmpFragment, Metadata, Sta
 
 SYM_OK: str = "\033[92m✓\033[0m"
 SYM_NOT_OK: str = "\033[91m✗\033[0m"
+SYM_ARROW: str = "\033[96m→\033[0m"
 VERBOSE: bool = False
 
 
@@ -153,7 +154,7 @@ def remove_extra_data(jpeg: Jpeg) -> bool:
         return True
 
 
-def process_jpeg(jpeg: Jpeg, dry: bool = False) -> tuple[Path | None, int]:
+def process_jpeg(jpeg: Jpeg, dry: bool = False) -> tuple[Path | None, int, int]:
     """
     Export a new image without the metadata associated with Motion Photo.
     If the initial image ends with .MP.jpg export as path/to/image.jpg.
@@ -161,10 +162,17 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False) -> tuple[Path | None, int]:
 
     If dry is True, only show information without creating output images.
 
-    Return the path of the output image and the bytes saved.
+    Return the path of the output image, the size of the input and the size of the output images.
     """
 
+    suffix: str = ".clean"
+
+    # Ignore files already cleaned
     print_verbose(f"Input file: {jpeg.path.absolute()}")
+    if jpeg.path.stem.endswith(suffix):
+        print_verbose(f"{SYM_ARROW} File already cleaned")
+        return None, 0, 0
+
     jpeg.parse()
     size_input = len(jpeg)
     print_verbose(f"Input size: {size_input:,d} bytes")
@@ -182,8 +190,8 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False) -> tuple[Path | None, int]:
 
     # If a change has occured during the pipeline
     if not any(changed):
-        print_verbose("No change: skip")
-        return None, 0
+        print_verbose(f"{SYM_ARROW} No change applied")
+        return None, size_input, size_input
 
     # Show information about the output images
     print_verbose(f"Output file: {output.absolute()}")
@@ -196,7 +204,7 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False) -> tuple[Path | None, int]:
     if not dry:
         jpeg.save(output)
 
-    return output.absolute(), bytes_saved
+    return output.absolute(), size_input, size_output
 
 
 if __name__ == "__main__":
@@ -252,6 +260,7 @@ if __name__ == "__main__":
     # To show the current folder
     dir_current = ""
     # Total bytes saved
+    total_bytes: int = 0
     bytes_saved: int = 0
     # To show the progress
     progress_total = len(jpeg_files)
@@ -266,8 +275,9 @@ if __name__ == "__main__":
         else:
             print(f"  {progress:>{len(str(progress_total))}}/{progress_total} ", end="")
         # Process the file
-        output, saved = process_jpeg(jpeg, args.dry)
-        bytes_saved += saved
+        output, size_input, size_output = process_jpeg(jpeg, args.dry)
+        total_bytes += size_input
+        bytes_saved += size_input - size_output
         # If not verbose, show the exported image
         if not args.verbose:
             if output is None:
@@ -275,4 +285,7 @@ if __name__ == "__main__":
             else:
                 print(jpeg.path.name, "->", output.name)
 
+    print()
+    print(f"Total size: {total_bytes:,d} bytes")
     print(f"Total saved: {bytes_saved:,d} bytes")
+    print(f"Percent saved: {bytes_saved / total_bytes:.2%}")
