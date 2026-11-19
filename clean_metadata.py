@@ -7,14 +7,15 @@ from src.objects.metadata import Metadata, XmpExtension, XmpExtensionFragment, X
 
 SYM_OK: str = "\033[92m✓\033[0m"
 SYM_NOT_OK: str = "\033[91m✗\033[0m"
+VERBOSE: bool = False
 
 
-def print_verbose(text: str, verbose: bool, **kwargs) -> None:
-    if verbose:
+def print_verbose(text: str, **kwargs) -> None:
+    if VERBOSE:
         print(text, **kwargs)
 
 
-def remove_motion_photo(jpeg: Jpeg, verbose: bool) -> bool:
+def remove_motion_photo(jpeg: Jpeg) -> bool:
     """
     Remove:
         - GCamera:MotionPhoto
@@ -25,7 +26,7 @@ def remove_motion_photo(jpeg: Jpeg, verbose: bool) -> bool:
 
     # Check if the MotionPhoto is in the file
     if "MotionPhoto" not in jpeg.xmp_data:
-        print_verbose(f"{SYM_NOT_OK} MotionPhoto not found in Standard XMP.", verbose)
+        print_verbose(f"{SYM_NOT_OK} MotionPhoto not found in Standard XMP.")
         return False
 
     # Find the XMP Standard segment
@@ -36,7 +37,7 @@ def remove_motion_photo(jpeg: Jpeg, verbose: bool) -> bool:
             break
 
     if xmp is None:
-        print_verbose(f"{SYM_NOT_OK} Standard XMP not found.", verbose)
+        print_verbose(f"{SYM_NOT_OK} Standard XMP not found.")
         return False
 
     # Try to remove the attributes associated with the MotionPhoto
@@ -49,25 +50,25 @@ def remove_motion_photo(jpeg: Jpeg, verbose: bool) -> bool:
         # Check if the Standard XMP has the attribute and remove it
         if xmp.has_attribute(xpath, attribute):
             xmp.remove_attribute(xpath, attribute)
-            print_verbose(f"{SYM_OK} {attribute} removed from Standard XMP.", verbose)
+            print_verbose(f"{SYM_OK} {attribute} removed from Standard XMP.")
         else:
-            print_verbose(f"{SYM_NOT_OK} {attribute} not found in Standard XMP.", verbose)
+            print_verbose(f"{SYM_NOT_OK} {attribute} not found in Standard XMP.")
 
     if xmp.has_element('.//rdf:li/Container:Item[@Item:Semantic="MotionPhoto"]/..'):
         # Remove the rdf:li with Container:Item for the MotionPhoto
         xmp.remove_elements('.//rdf:li/Container:Item[@Item:Semantic="MotionPhoto"]/..')
         # Remove the data of the MotionPhoto
         jpeg.xmp_data.pop("MotionPhoto")
-        print_verbose(f"{SYM_OK} MotionPhoto removed from Standard XMP", verbose)
+        print_verbose(f"{SYM_OK} MotionPhoto removed from Standard XMP")
     else:
         print_verbose(
-            f"{SYM_NOT_OK} Container:Item for the MotionPhoto not found in Standard XMP", verbose
+            f"{SYM_NOT_OK} Container:Item for the MotionPhoto not found in Standard XMP"
         )
 
     return True
 
 
-def remove_hdr_makernote(jpeg: Jpeg, verbose: bool) -> bool:
+def remove_hdr_makernote(jpeg: Jpeg) -> bool:
     """
     Remove:
         - GCamera:HdrPlusMakernote from recent HDR+ format
@@ -83,8 +84,7 @@ def remove_hdr_makernote(jpeg: Jpeg, verbose: bool) -> bool:
             xmp_standard = segment.data
             break
     if xmp_standard is None:
-        if verbose:
-            print(f"{SYM_NOT_OK} Standard XMP not found.")
+        print_verbose(f"{SYM_NOT_OK} Standard XMP not found.")
         return False
 
     # Check if the Standard XMP mentions Extended XMP
@@ -92,8 +92,7 @@ def remove_hdr_makernote(jpeg: Jpeg, verbose: bool) -> bool:
         ".//rdf:Description", "xmpNote:HasExtendedXMP"
     )
     if not has_xmp_extension:
-        if verbose:
-            print(f"{SYM_NOT_OK} Extended XMP not found.")
+        print_verbose(f"{SYM_NOT_OK} Extended XMP not found.")
         return False
 
     # Fetch all the Extended XMP fragments
@@ -119,11 +118,9 @@ def remove_hdr_makernote(jpeg: Jpeg, verbose: bool) -> bool:
         if xmp_extension.has_attribute(xpath, attribute):
             xmp_extension.remove_attribute(xpath, attribute)
             change = True
-            if verbose:
-                print(f"{SYM_OK} {attribute} removed from Extended XMP.")
+            print_verbose(f"{SYM_OK} {attribute} removed from Extended XMP.")
         else:
-            if verbose:
-                print(f"{SYM_NOT_OK} {attribute} not found in Extended XMP.")
+            print_verbose(f"{SYM_NOT_OK} {attribute} not found in Extended XMP.")
 
     if not change:
         return False
@@ -142,7 +139,7 @@ def remove_hdr_makernote(jpeg: Jpeg, verbose: bool) -> bool:
     return True
 
 
-def remove_extra_data(jpeg: Jpeg, verbose: bool) -> bool:
+def remove_extra_data(jpeg: Jpeg) -> bool:
     """
     Remove:
         - jpeg.extra_data
@@ -150,27 +147,29 @@ def remove_extra_data(jpeg: Jpeg, verbose: bool) -> bool:
     """
 
     if jpeg.extra_data.as_bytes() == b"":
-        print_verbose(f"{SYM_NOT_OK} Extra data not found.", verbose)
+        print_verbose(f"{SYM_NOT_OK} Extra data not found.")
         return False
     else:
         jpeg.extra_data = Metadata(b"")
-        print_verbose(f"{SYM_OK} Extra data removed.", verbose)
+        print_verbose(f"{SYM_OK} Extra data removed.")
         return True
 
 
-def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path | None:
+def process_jpeg(jpeg: Jpeg, dry: bool = False) -> tuple[Path | None, int]:
     """
     Export a new image without the metadata associated with Motion Photo.
     If the initial image ends with .MP.jpg export as path/to/image.jpg.
     Else, export the image as path/to/image.static.jpg
 
     If dry is True, only show information without creating output images.
-    If verbose is True, print information about the input and output images.
 
-    Return the path of the output image.
+    Return the path of the output image and the bytes saved.
     """
 
+    print_verbose(f"Input file: {jpeg.path.absolute()}")
     jpeg.parse()
+    size_input = len(jpeg)
+    print_verbose(f"Input size: {size_input:,d} bytes")
 
     if jpeg.path.stem.endswith(".MP"):
         stem = Path(jpeg.path.stem).stem
@@ -178,40 +177,31 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False, verbose: bool = False) -> Path |
     else:
         output = jpeg.path.with_stem(jpeg.path.stem + ".clean")
 
-    if verbose:
-        print("Input file: ", jpeg.path.absolute())
-        print("Input size: ", len(jpeg), "bytes")
-
     # Run the pipeline to remove the desired metadata
     pipeline: list[Callable] = [remove_motion_photo, remove_hdr_makernote, remove_extra_data]
     changed: list[bool] = []
     for func in pipeline:
-        change = func(jpeg, verbose)
+        change = func(jpeg)
         changed.append(change)
     jpeg.image.sort_segments()
 
     # If a change has occured during the pipeline
     if not any(changed):
-        if verbose:
-            print("No change: skip")
+        print_verbose("No change: skip")
         return None
 
-    if verbose:
-        print("Output file:", output.absolute())
-
-    if dry:
-        if verbose:
-            print("Output size:", len(jpeg), "bytes")
-        return output.absolute()
+    # Show information about the output images
+    print_verbose(f"Output file: {output.absolute()}")
+    size_output = len(jpeg)
+    print_verbose(f"Output size: {size_output:,d} bytes")
+    bytes_saved: int = size_input - size_output
+    print_verbose(f"Difference: {bytes_saved:,d} bytes")
 
     # Write the output jpeg file
-    jpeg.save(output)
+    if not dry:
+        jpeg.save(output)
 
-    # Show information about the output images
-    if verbose:
-        print("Output size:", len(jpeg), "bytes")
-
-    return output.absolute()
+    return output.absolute(), bytes_saved
 
 
 if __name__ == "__main__":
@@ -235,6 +225,7 @@ if __name__ == "__main__":
     )
 
     args: argparse.Namespace = parser.parse_args()
+    VERBOSE = args.verbose
 
     # Process the filenames to extract all the paths
     paths: list[Path] = []
@@ -265,6 +256,8 @@ if __name__ == "__main__":
 
     # To show the current folder
     dir_current = ""
+    # Total bytes saved
+    bytes_saved: int = 0
     # To show the progress
     progress_total = len(jpeg_files)
     for progress, jpeg in enumerate(jpeg_files, 1):
@@ -275,11 +268,16 @@ if __name__ == "__main__":
         # Show progress
         if args.verbose:
             print(f"  {progress:>{len(str(progress_total))}}/{progress_total}")
-            output = process_jpeg(jpeg, args.dry, args.verbose)
         else:
             print(f"  {progress:>{len(str(progress_total))}}/{progress_total} ", end="")
-            output = process_jpeg(jpeg, args.dry, args.verbose)
+        # Process the file
+        output, saved = process_jpeg(jpeg, args.dry)
+        bytes_saved += saved
+        # If not verbose, show the exported image
+        if not args.verbose:
             if output is None:
                 print(jpeg.path.name, "-> no change")
             else:
                 print(jpeg.path.name, "->", output.name)
+
+    print_verbose(f"Total: {bytes_saved:,d} bytes saved")
