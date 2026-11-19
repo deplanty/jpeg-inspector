@@ -1,6 +1,9 @@
 import argparse
+import time
 from collections.abc import Callable
 from pathlib import Path
+
+from rich.progress import track
 
 from src.objects import Jpeg, Segment
 from src.objects.metadata import ExtendedXmp, ExtendedXmpFragment, Metadata, StandardXmp
@@ -264,7 +267,9 @@ if __name__ == "__main__":
     bytes_saved: int = 0
     # To show the progress
     progress_total = len(jpeg_files)
-    for progress, jpeg in enumerate(jpeg_files, 1):
+    # Total time
+    timer_start = time.time()
+    for progress, jpeg in track(enumerate(jpeg_files, 1), total=progress_total, transient=True):
         # show current folder
         if dir_current != jpeg.path.parent:
             dir_current = jpeg.path.parent
@@ -286,6 +291,8 @@ if __name__ == "__main__":
                 print(jpeg.path.name, "->", output.name)
 
     print()
+    timer_duration = time.time() - timer_start
+    print(f"Total time: {time.strftime("%H:%M:%S", time.gmtime(timer_duration))}")
     print(f"Total size: {total_bytes:,d} bytes")
     print(f"Total saved: {bytes_saved:,d} bytes")
     print(f"Percent saved: {bytes_saved / total_bytes:.2%}")
