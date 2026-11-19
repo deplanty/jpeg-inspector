@@ -5,7 +5,7 @@ from .xml_metadata import XmlMetadata
 
 
 @dataclass
-class XmpStandardItem:
+class StandardXmpItem:
     semantic: str = ""
     mime: str = ""
     length: int = 0
@@ -15,7 +15,7 @@ class XmpStandardItem:
     offset: int = 0
 
     @classmethod
-    def from_element(cls, element: ElementTree.Element, namespaces) -> "XmpStandardItem":
+    def from_element(cls, element: ElementTree.Element, namespaces) -> "StandardXmpItem":
         def get(key: str) -> str:
             return element.attrib.get(f"{{{namespaces['Item']}}}{key}", "")
 
@@ -35,17 +35,17 @@ class XmpStandardItem:
         return cls(semantic, mime, length, padding)
 
 
-class XmpStandard(XmlMetadata):
+class StandardXmp(XmlMetadata):
     signature = b"http://ns.adobe.com/xap/1.0/\x00"
     name = "Standard XMP"
 
     def __init__(self, payload: bytes):
         super().__init__(payload)
 
-        self.items: list[XmpStandardItem] = []
+        self.items: list[StandardXmpItem] = []
         self.parse()
 
-    def parse(self) -> list[XmpStandardItem]:
+    def parse(self) -> list[StandardXmpItem]:
         """Return the sequence of items contained in the JPEG file."""
 
         # Do nothing if the namespace Container is not present
@@ -59,8 +59,8 @@ class XmpStandard(XmlMetadata):
         if sequence is None:
             return []
         # Get sequence of the items
-        self.items: list[XmpStandardItem] = []
+        self.items: list[StandardXmpItem] = []
         for item in sequence.findall("rdf:li/Container:Item", self.namespaces):
-            self.items.append(XmpStandardItem.from_element(item, self.namespaces))
+            self.items.append(StandardXmpItem.from_element(item, self.namespaces))
 
         return self.items

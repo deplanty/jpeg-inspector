@@ -1,4 +1,4 @@
-from src.objects.metadata import Exif, IccProfile, Jfif, Mpf, XmpExtensionFragment, XmpStandard, get
+from src.objects.metadata import Exif, ExtendedXmpFragment, IccProfile, Jfif, Mpf, StandardXmp, get
 
 exif = b"Exif\x00\x00II*"
 icc_profile = b"ICC_PROFILE\x00\x01\x01\x00\x00\x0cHLino"
@@ -45,21 +45,21 @@ def test_metadata_mpf():
 
 
 def test_metadata_xmp_extension_fragment():
-    assert XmpExtensionFragment.has_signature(exif) == False
-    assert XmpExtensionFragment.has_signature(icc_profile) == False
-    assert XmpExtensionFragment.has_signature(jfif) == False
-    assert XmpExtensionFragment.has_signature(mpf) == False
-    assert XmpExtensionFragment.has_signature(xmp_extension_fragment) == True
-    assert XmpExtensionFragment.has_signature(xmp_standard) == False
+    assert ExtendedXmpFragment.has_signature(exif) == False
+    assert ExtendedXmpFragment.has_signature(icc_profile) == False
+    assert ExtendedXmpFragment.has_signature(jfif) == False
+    assert ExtendedXmpFragment.has_signature(mpf) == False
+    assert ExtendedXmpFragment.has_signature(xmp_extension_fragment) == True
+    assert ExtendedXmpFragment.has_signature(xmp_standard) == False
 
 
 def test_metadata_xmp_standard():
-    assert XmpStandard.has_signature(exif) == False
-    assert XmpStandard.has_signature(icc_profile) == False
-    assert XmpStandard.has_signature(jfif) == False
-    assert XmpStandard.has_signature(mpf) == False
-    assert XmpStandard.has_signature(xmp_extension_fragment) == False
-    assert XmpStandard.has_signature(xmp_standard) == True
+    assert StandardXmp.has_signature(exif) == False
+    assert StandardXmp.has_signature(icc_profile) == False
+    assert StandardXmp.has_signature(jfif) == False
+    assert StandardXmp.has_signature(mpf) == False
+    assert StandardXmp.has_signature(xmp_extension_fragment) == False
+    assert StandardXmp.has_signature(xmp_standard) == True
 
 
 def test_get_metadata():
@@ -67,5 +67,5 @@ def test_get_metadata():
     assert isinstance(get(icc_profile), IccProfile)
     assert isinstance(get(jfif), Jfif)
     assert isinstance(get(mpf), Mpf)
-    assert isinstance(get(xmp_extension_fragment), XmpExtensionFragment)
-    assert isinstance(get(xmp_standard), XmpStandard)
+    assert isinstance(get(xmp_extension_fragment), ExtendedXmpFragment)
+    assert isinstance(get(xmp_standard), StandardXmp)

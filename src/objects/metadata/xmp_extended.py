@@ -7,7 +7,7 @@ from .metadata import Metadata
 from .xml_metadata import XmlMetadata
 
 
-class XmpExtensionFragment(Metadata):
+class ExtendedXmpFragment(Metadata):
     signature = b"http://ns.adobe.com/xmp/extension/\x00"
     name = "Extended XMP fragment"
     max_size: int = 64500
@@ -23,7 +23,7 @@ class XmpExtensionFragment(Metadata):
     @classmethod
     def from_payload(
         cls, guid: bytes, size_total: int, offset: int, payload: bytes
-    ) -> "XmpExtensionFragment":
+    ) -> "ExtendedXmpFragment":
         size_total_b = struct.pack(">I", size_total)
         offset_b = struct.pack(">I", offset)
         data = cls.signature + guid + size_total_b + offset_b + payload
@@ -41,9 +41,9 @@ class XmpExtensionFragment(Metadata):
             return self.to_raw_str()
 
 
-class XmpExtension(XmlMetadata):
+class ExtendedXmp(XmlMetadata):
     signature = b""
-    name = "XMP extension"
+    name = "Extended XMP"
 
     @property
     def guid(self) -> bytes:
@@ -51,7 +51,7 @@ class XmpExtension(XmlMetadata):
         return hashlib.md5(self.payload).hexdigest().upper().encode()
 
     @classmethod
-    def from_fragments(cls, fragments: list[XmpExtensionFragment]) -> "XmpExtension":
+    def from_fragments(cls, fragments: list[ExtendedXmpFragment]) -> "ExtendedXmp":
         payload: bytes = b""
         for fragment in sorted(fragments, key=lambda frag: frag.offset):
             payload += fragment.payload
@@ -65,12 +65,12 @@ class XmpExtension(XmlMetadata):
 
         return xmp_extension
 
-    def to_fragments(self) -> list[XmpExtensionFragment]:
-        fragments: list[XmpExtensionFragment] = []
+    def to_fragments(self) -> list[ExtendedXmpFragment]:
+        fragments: list[ExtendedXmpFragment] = []
         size_total = len(self.payload)
-        for index in range(size_total // XmpExtensionFragment.max_size + 1):
-            offset = index * XmpExtensionFragment.max_size
-            fragment = XmpExtensionFragment.from_payload(
+        for index in range(size_total // ExtendedXmpFragment.max_size + 1):
+            offset = index * ExtendedXmpFragment.max_size
+            fragment = ExtendedXmpFragment.from_payload(
                 self.guid, size_total, offset, self.payload
             )
             fragments.append(fragment)

@@ -3,7 +3,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from src.objects import Jpeg, Segment
-from src.objects.metadata import Metadata, XmpExtension, XmpExtensionFragment, XmpStandard
+from src.objects.metadata import Metadata, ExtendedXmp, ExtendedXmpFragment, StandardXmp
 
 SYM_OK: str = "\033[92m✓\033[0m"
 SYM_NOT_OK: str = "\033[91m✗\033[0m"
@@ -30,9 +30,9 @@ def remove_motion_photo(jpeg: Jpeg) -> bool:
         return False
 
     # Find the XMP Standard segment
-    xmp: XmpStandard | None = None
+    xmp: StandardXmp | None = None
     for segment in jpeg.image.segments:
-        if isinstance(segment.data, XmpStandard):
+        if isinstance(segment.data, StandardXmp):
             xmp = segment.data
             break
 
@@ -76,9 +76,9 @@ def remove_hdr_makernote(jpeg: Jpeg) -> bool:
     """
 
     # Find the Standard XMP Metadata
-    xmp_standard: XmpStandard | None = None
+    xmp_standard: StandardXmp | None = None
     for segment in jpeg.image.segments:
-        if isinstance(segment.data, XmpStandard):
+        if isinstance(segment.data, StandardXmp):
             xmp_standard = segment.data
             break
     if xmp_standard is None:
@@ -96,11 +96,11 @@ def remove_hdr_makernote(jpeg: Jpeg) -> bool:
     # Fetch all the Extended XMP fragments
     xmp_extension_segments: list[Segment] = []
     for segment in jpeg.image.segments:
-        if isinstance(segment.data, XmpExtensionFragment):
+        if isinstance(segment.data, ExtendedXmpFragment):
             xmp_extension_segments.append(segment)
 
     # Create the full Extended XMP from the fragments
-    xmp_extension: XmpExtension = XmpExtension.from_fragments(
+    xmp_extension: ExtendedXmp = ExtendedXmp.from_fragments(
         [segment.data for segment in xmp_extension_segments]
     )
 

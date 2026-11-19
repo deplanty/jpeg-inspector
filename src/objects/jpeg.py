@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any
 
-from src.objects.metadata import Metadata, XmpStandard, XmpStandardItem
+from src.objects.metadata import Metadata, StandardXmp, StandardXmpItem
 
 from .jpeg_image import JpegImage
 
@@ -44,9 +44,9 @@ class Jpeg:
             self.image = JpegImage.parse(fid)
 
             # Check for additional data in the file
-            xmp: XmpStandard | None = None
+            xmp: StandardXmp | None = None
             for segment in self.image.segments:
-                if isinstance(segment.data, XmpStandard):
+                if isinstance(segment.data, StandardXmp):
                     xmp = segment.data
                     break
 
@@ -57,7 +57,7 @@ class Jpeg:
                 # The Standard XMP associated data are stored at the end of the file. The data are
                 # read backward.
                 index_from_end: int = fid.seek(0, 2)
-                xmp_item: XmpStandardItem
+                xmp_item: StandardXmpItem
                 for xmp_item in reversed(xmp.items):
                     index_from_end -= xmp_item.length
                     if xmp_item.length > 0:
