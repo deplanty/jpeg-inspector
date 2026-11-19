@@ -61,9 +61,7 @@ def remove_motion_photo(jpeg: Jpeg) -> bool:
         jpeg.xmp_data.pop("MotionPhoto")
         print_verbose(f"{SYM_OK} MotionPhoto removed from Standard XMP")
     else:
-        print_verbose(
-            f"{SYM_NOT_OK} Container:Item for the MotionPhoto not found in Standard XMP"
-        )
+        print_verbose(f"{SYM_NOT_OK} Container:Item for the MotionPhoto not found in Standard XMP")
 
     return True
 
@@ -171,11 +169,8 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False) -> tuple[Path | None, int]:
     size_input = len(jpeg)
     print_verbose(f"Input size: {size_input:,d} bytes")
 
-    if jpeg.path.stem.endswith(".MP"):
-        stem = Path(jpeg.path.stem).stem
-        output = jpeg.path.with_stem(stem)
-    else:
-        output = jpeg.path.with_stem(jpeg.path.stem + ".clean")
+    # Add a .clean suffix to the filename to identify which files have been modified
+    output = jpeg.path.with_stem(jpeg.path.stem + ".clean")
 
     # Run the pipeline to remove the desired metadata
     pipeline: list[Callable] = [remove_motion_photo, remove_hdr_makernote, remove_extra_data]
@@ -188,7 +183,7 @@ def process_jpeg(jpeg: Jpeg, dry: bool = False) -> tuple[Path | None, int]:
     # If a change has occured during the pipeline
     if not any(changed):
         print_verbose("No change: skip")
-        return None
+        return None, 0
 
     # Show information about the output images
     print_verbose(f"Output file: {output.absolute()}")
@@ -280,4 +275,4 @@ if __name__ == "__main__":
             else:
                 print(jpeg.path.name, "->", output.name)
 
-    print_verbose(f"Total: {bytes_saved:,d} bytes saved")
+    print(f"Total saved: {bytes_saved:,d} bytes")
