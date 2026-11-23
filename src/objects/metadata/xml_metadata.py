@@ -38,7 +38,7 @@ class XmlMetadata(Metadata):
     def get_attribute(self, xpath: str, attribute: str) -> None | Any:
         element = self.tree.find(xpath, self.namespaces)
         if element is None:
-            return
+            return None
 
         attribute = self.with_namespace(attribute)
         return element.attrib[attribute]

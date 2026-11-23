@@ -101,7 +101,7 @@ class Segment:
 #      -1 for variable size where the length is after their marker.
 #      -2 for variable size where no length is given.
 #   2: order priority
-MARKERS: dict[int, tuple[str, int]] = {
+MARKERS: dict[int, tuple[str, int, int]] = {
     0xD8: ("SOI", 0, 0),  # First segment
     0xC0: ("SOF0", -1, 50),
     0xC2: ("SOF2", -1, 50),
